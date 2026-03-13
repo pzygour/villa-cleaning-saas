@@ -14,9 +14,8 @@ final readonly class Property
         public string $name,
         public string $location,
         public PropertyType $type,
-        public int $bedsCount,
-        public int $bathroomsCount,
-        public string $operationalNotes = ''
+        public string $operationalNotes = '',
+        public bool $isActive = true
     ) {
     }
 }

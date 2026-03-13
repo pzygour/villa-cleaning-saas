@@ -1,184 +1,139 @@
-# Property Operations System Architecture Foundation
+# Property Operations System Architecture Foundation (Phase 1 - Approved Schema)
 
 ## 1) Proposed Project Architecture
 
-- **Domain-first layered architecture** with strict dependency direction:
+- **Domain-first layered architecture** with strict dependency flow:
   - `Http -> Application -> Domain`
-  - `Infrastructure` implements contracts defined in `Application`
-  - `Core` contains cross-cutting concerns (DB, errors, logging, runtime)
-- **Framework-less bootstrap** with PSR-4 and constructor injection-ready structure.
-- **Module boundaries** align with business capabilities:
-  - Property & setup
-  - Booking
-  - Cleaning schedule
-  - Linen/towel requirement engine
-  - Inventory
-  - Laundry handover
+  - `Infrastructure` implements interfaces defined by `Application`
+  - `Core` provides reusable runtime concerns (DB, logging, exceptions, transaction handling)
+- **Framework-less PHP 8.1** with PSR-4 autoloading and strict typing.
+- **Business modules** remain separated by responsibility:
+  - Property setup (property/room/bed/bath models)
+  - Booking lifecycle
+  - Cleaning schedule generation and assignment
+  - Linen/towel requirement rules + event requirement snapshots
+  - Inventory ledger + balance management
+  - Laundry handover and returns
 
-## 2) Complete Folder and File Tree
+## 2) Folder and File Tree (Current Foundation)
 
 ```text
 .
 ├── composer.json
 ├── config/
-│   ├── app.php
-│   ├── database.php
-│   └── logging.php
-├── database/
-│   └── sql/
-│       └── 001_initial_schema.sql
-├── docs/
-│   └── architecture.md
-├── public/
-│   └── index.php
+├── database/sql/001_initial_schema.sql
+├── docs/architecture.md
+├── public/index.php
 ├── src/
-│   ├── Application/
-│   │   ├── Contracts/
-│   │   │   ├── BookingRepositoryInterface.php
-│   │   │   ├── CleaningEventRepositoryInterface.php
-│   │   │   ├── InventoryRepositoryInterface.php
-│   │   │   ├── LaundryRepositoryInterface.php
-│   │   │   └── PropertyRepositoryInterface.php
-│   │   ├── DTO/
-│   │   │   ├── CleaningEventRequirementDTO.php
-│   │   │   ├── CreateBookingDTO.php
-│   │   │   └── InventoryMovementDTO.php
-│   │   ├── Services/
-│   │   │   ├── BookingService.php
-│   │   │   ├── CleaningScheduleService.php
-│   │   │   ├── InventoryService.php
-│   │   │   └── LaundryService.php
-│   │   └── Validators/
-│   │       └── BookingValidator.php
 │   ├── Core/
-│   │   ├── Database/
-│   │   │   ├── ConnectionFactory.php
-│   │   │   └── TransactionManager.php
-│   │   ├── Exception/
-│   │   │   ├── DomainException.php
-│   │   │   └── ValidationException.php
-│   │   ├── Http/
-│   │   │   └── Kernel.php
-│   │   └── Logging/
-│   │       └── LoggerInterface.php
 │   ├── Domain/
-│   │   ├── Booking/
-│   │   │   └── Booking.php
-│   │   ├── Cleaning/
-│   │   │   ├── CleaningEvent.php
-│   │   │   └── CleaningEventType.php
-│   │   ├── Common/
-│   │   │   └── EntityId.php
-│   │   ├── Inventory/
-│   │   │   ├── InventoryTransaction.php
-│   │   │   └── InventoryTransactionType.php
-│   │   ├── Laundry/
-│   │   │   └── LaundryHandover.php
-│   │   ├── Property/
-│   │   │   ├── Property.php
-│   │   │   ├── PropertyType.php
-│   │   │   └── Room.php
-│   │   └── User/
-│   │       ├── User.php
-│   │       └── UserRole.php
-│   ├── Http/
-│   │   ├── Controller/
-│   │   │   └── BookingController.php
-│   │   ├── Middleware/
-│   │   │   └── ExceptionHandlerMiddleware.php
-│   │   ├── Request/
-│   │   │   └── Request.php
-│   │   └── Response/
-│   │       ├── HtmlResponse.php
-│   │       └── ResponseInterface.php
-│   └── Infrastructure/
-│       ├── Clock/
-│       │   └── SystemClock.php
-│       ├── Logging/
-│       │   └── FileLogger.php
-│       └── Persistence/
-│           └── MySql/
-│               └── Repository/
-│                   └── AbstractPdoRepository.php
+│   ├── Application/
+│   ├── Infrastructure/
+│   └── Http/
 ├── storage/
-│   ├── cache/
-│   └── logs/
 └── tests/
-    ├── Integration/
-    ├── Unit/
-    └── run.php
 ```
 
-## 3) Database Schema Design
+> The tree above is intentionally concise here. The concrete baseline classes/interfaces already committed in `src/` remain valid for this design phase.
 
-- SQL is in `database/sql/001_initial_schema.sql`.
-- The schema uses **UUID-like `CHAR(36)` primary keys** for safer cross-module and future API synchronization.
-- Key normalization decisions:
-  - Static and reusable dimensions split into `bed_types`, `bathroom_types`, `item_catalog`.
-  - Flexible rules encoded using scoped tables (`cleaning_rules`, `linen_rules`) with `scope_type + scope_id`.
-  - Requirements persisted per cleaning event in `cleaning_event_requirements` to support snapshots and auditability.
-  - Inventory is split into **balance table** (`inventory_balances`) + **immutable ledger** (`inventory_transactions`).
-  - Laundry modeled as header/items (`laundry_handovers`, `laundry_handover_items`) and linked to inventory transactions through references.
+## 3) Phase 1 Approved Database Schema Design
 
-## 4) Main Domain Entities and Responsibilities
+The approved schema is in: `database/sql/001_initial_schema.sql`.
 
-- `Property`, `Room`: physical layout and operations context.
-- `Booking`: occupancy timeline source for schedules.
-- `CleaningEvent`: operational unit generated from booking rules.
-- `InventoryTransaction`: immutable stock movement event.
-- `LaundryHandover`: outbound/return lifecycle for laundry batches.
-- `User` + `UserRole`: future RBAC anchor.
+### Design highlights
 
-## 5) Repository Interfaces and Service Boundaries
+- Uses UUID-style `CHAR(36)` IDs consistently across all entities.
+- Adds **soft-operational activity flags** (`is_active`) on key master tables (`properties`, `rooms`, `bed_types`, `bathroom_types`, `item_catalog`, `inventory_locations`).
+- Replaces generic cleaning/linen rule scopes with **explicit rule tables**:
+  - `bed_type_item_rules`
+  - `bathroom_type_item_rules`
+  - `guest_item_rules`
+- Introduces **property-level cleaning policy table**:
+  - `property_cleaning_settings` for configurable mid-clean cadence and turnover behavior.
+- Adds **cleaner assignment capability** at event level:
+  - `cleaning_event_assignments`.
+- Strengthens indexing and FK behavior (`ON DELETE`/`ON UPDATE`) for operational safety and query performance.
+- Extends inventory ledger transaction vocabulary with reservation lifecycle:
+  - `reserve`, `unreserve` in `inventory_transactions.transaction_type`.
 
-### Repository contracts
-- `PropertyRepositoryInterface`: property CRUD/read model.
-- `BookingRepositoryInterface`: booking persistence + period queries.
-- `CleaningEventRepositoryInterface`: schedule persistence/query.
-- `InventoryRepositoryInterface`: stock state/movement write model.
-- `LaundryRepositoryInterface`: handover workflow persistence.
+## 4) Main Domain Responsibilities (Aligned to Approved Schema)
 
-### Application services
-- `BookingService`: booking use-cases, validation, orchestration.
-- `CleaningScheduleService`: rule-driven event generation.
-- `InventoryService`: movement posting/reservations.
-- `LaundryService`: handover + return and inventory linkage.
+- `Property`, `Room`, `RoomBed`, `RoomBathroom`: structural setup for each rental unit.
+- `Booking`: occupancy timeline and source for cleaning generation.
+- `PropertyCleaningSettings`: per-property schedule policy defaults.
+- `CleaningEvent`: generated operational workload.
+- `CleaningEventAssignment`: user assignment + workflow state.
+- `ItemCatalog`: canonical linen/towel item definitions.
+- `BedTypeItemRule`, `BathroomTypeItemRule`, `GuestItemRule`: deterministic requirement rules.
+- `CleaningEventRequirement`: immutable-ish per-event demand snapshot.
+- `InventoryBalance` + `InventoryTransaction`: current stock + audit ledger.
+- `LaundryHandover` + `LaundryHandoverItem`: outbound/return lifecycle and reconciliation.
 
-## 6) Key DTOs
+## 5) Repository and Service Boundary Recommendations (Revised)
 
-- `CreateBookingDTO`: booking command payload.
-- `CleaningEventRequirementDTO`: calculated linen/towel requirements per event.
-- `InventoryMovementDTO`: typed stock movement command from UI or workflows.
+### Repository interfaces (recommended set)
 
-## 7) Module Interaction Flow
+- `PropertyRepositoryInterface`
+- `RoomRepositoryInterface`
+- `BedBathroomCatalogRepositoryInterface`
+- `BookingRepositoryInterface`
+- `PropertyCleaningSettingsRepositoryInterface`
+- `CleaningEventRepositoryInterface`
+- `CleaningEventAssignmentRepositoryInterface`
+- `ItemCatalogRepositoryInterface`
+- `RequirementRuleRepositoryInterface` (bed/bath/guest rule access)
+- `CleaningRequirementRepositoryInterface`
+- `InventoryRepositoryInterface`
+- `InventoryTransactionRepositoryInterface`
+- `LaundryRepositoryInterface`
 
-1. Booking inserted/updated by manager.
-2. `BookingService` persists booking through repository.
-3. Scheduler calls `CleaningScheduleService` for date range/property.
-4. `CleaningEvent` records generated and stored.
-5. Requirement engine calculates linen/towel quantities and stores in `cleaning_event_requirements`.
-6. Operations issue inventory picks; `InventoryService` writes `inventory_transactions` and updates balances.
-7. Laundry handover created; `LaundryService` stores handover + items and emits `laundry_out` transactions.
-8. Laundry returns post `laundry_in`; handover item statuses are updated.
+### Application service boundaries (recommended)
 
-## 8) Recommended Build Order (Next Phase)
+- `PropertySetupService`: property + room + bed/bath composition workflows.
+- `BookingService`: booking CRUD and validation.
+- `CleaningScheduleService`: generation of arrival/departure/mid-stay/turnover events using `property_cleaning_settings`.
+- `CleaningAssignmentService`: assign/unassign cleaners and update assignment status.
+- `RequirementCalculationService`: compute linen/towel quantities from explicit rule tables.
+- `InventoryService`: on-hand/reserved stock workflows + ledger writes.
+- `LaundryService`: handover creation, return reconciliation, and inventory coupling.
 
-1. **Property + Room setup + catalogs** (foundation data).
-2. **Booking module** with validation and list/calendar range APIs.
-3. **Cleaning event generator** implementing all business rules.
-4. **Requirement calculator** for linen/towel needs and period totals.
-5. **Inventory ledger and balance updater**.
-6. **Laundry handover workflow** and return reconciliation.
-7. **Dashboard read models** and optimized reporting queries.
+## 6) Module Interaction (Updated)
 
-## 9) SQL Deliverables
+1. Owner/manager configures property, rooms, bed/bath composition, and cleaning settings.
+2. Manager creates bookings.
+3. Scheduler reads bookings + property cleaning settings, writes cleaning events.
+4. Assignment workflow allocates cleaners to events.
+5. Requirement engine reads bed/bath/guest rules and writes per-event requirements.
+6. Inventory reservation/picking is posted to `inventory_transactions` and projected to `inventory_balances`.
+7. Laundry handovers create `laundry_out` transactions; returns create `laundry_in` and close pending handover items.
 
-- Initial full schema: `database/sql/001_initial_schema.sql`.
+## 7) Main Differences vs Previous Schema
 
-## 10) Important Design Decisions and Tradeoffs
+1. **Removed generic rules**:
+   - Dropped `cleaning_rules` and `linen_rules`.
+   - Introduced explicit rules: `property_cleaning_settings`, `bed_type_item_rules`, `bathroom_type_item_rules`, `guest_item_rules`.
+2. **Added operations-level assignment table**:
+   - New `cleaning_event_assignments` for cleaner allocation and assignment statuses.
+3. **Adjusted inventory transaction model**:
+   - Added `reserve` and `unreserve` transaction types.
+   - Added composite reference index `idx_inventory_transactions_reference`.
+4. **Booking reference strategy changed**:
+   - `bookings.booking_reference` is now nullable and no longer constrained unique per property.
+   - Added indexes for standalone and source+reference lookup.
+5. **Property shape simplified**:
+   - Removed aggregate counts (`beds_count`, `bathrooms_count`) from `properties`; those are derivable from room composition tables.
+6. **FK behavior and indexing hardened**:
+   - Broad adoption of explicit `ON DELETE/ON UPDATE` actions and more targeted secondary indexes.
 
-- **No framework now**: maximizes portability and low lock-in, but requires discipline on DI and routing conventions.
-- **Scope-based rules (JSON payloads)**: extensible for owner-specific logic; tradeoff is stricter validation needs in app layer.
-- **Ledger + balance inventory**: robust audit and performance for reads; tradeoff is transactional complexity.
-- **Event requirement snapshot table**: stable operational printouts and history even if rules later change.
-- **UUID-style IDs**: easy external system import support; tradeoff is larger indexes than integers.
+## 8) Next Build Priority (No Full Backend Yet)
+
+1. Implement setup module persistence (properties/rooms/bed-bath composition + cleaning settings).
+2. Implement booking persistence and validations.
+3. Implement cleaning event generation with approved property-level settings.
+4. Implement assignment and requirement calculation read/write pipelines.
+5. Implement inventory reservation + pick + laundry movements.
+6. Add module-level unit/integration tests around services and repositories.
+
+## 9) Scope Note
+
+This phase remains architecture and schema foundation only. Full business workflows, full backend endpoints, and frontend implementation are intentionally deferred.

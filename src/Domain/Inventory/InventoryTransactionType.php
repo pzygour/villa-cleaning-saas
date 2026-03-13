@@ -11,4 +11,6 @@ enum InventoryTransactionType: string
     case ADJUSTMENT = 'adjustment';
     case LAUNDRY_OUT = 'laundry_out';
     case LAUNDRY_IN = 'laundry_in';
+    case RESERVE = 'reserve';
+    case UNRESERVE = 'unreserve';
 }
