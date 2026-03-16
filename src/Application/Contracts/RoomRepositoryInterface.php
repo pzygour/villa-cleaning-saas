@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Contracts;
 
-interface PropertyRepositoryInterface
+interface RoomRepositoryInterface
 {
     public function create(array $data): string;
 
@@ -14,5 +14,9 @@ interface PropertyRepositoryInterface
 
     public function findById(string $id): ?array;
 
-    public function all(): array;
+    public function listByProperty(string $propertyId): array;
+
+    public function replaceBeds(string $roomId, array $beds): void;
+
+    public function replaceBathrooms(string $roomId, array $bathrooms): void;
 }

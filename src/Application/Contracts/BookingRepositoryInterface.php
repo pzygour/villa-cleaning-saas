@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Application\Contracts;
 
-use App\Domain\Booking\Booking;
-use DateTimeImmutable;
-
 interface BookingRepositoryInterface
 {
-    public function save(Booking $booking): void;
+    public function create(array $data): string;
 
-    /** @return list<Booking> */
-    public function forPropertyBetween(string $propertyId, DateTimeImmutable $from, DateTimeImmutable $to): array;
+    public function update(string $id, array $data): void;
+
+    public function cancel(string $id): void;
+
+    public function findById(string $id): ?array;
+
+    public function listByPropertyAndPeriod(string $propertyId, string $fromDate, string $toDate): array;
+
+    public function listActiveByPropertyAndPeriod(string $propertyId, string $fromDate, string $toDate): array;
 }
