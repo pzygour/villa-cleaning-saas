@@ -311,3 +311,18 @@ Milestone 1 should prioritize correctness of operational flow over breadth:
 - full SPA/API redesign
 
 This sequence reduces risk and validates the business-critical planning loop first: **Booking -> Cleaning Events -> Requirements -> Assignment**.
+
+---
+
+## Milestone 2 Note: departure_arrival Requirement Behavior
+
+For Milestone 2 requirement calculation, `departure_arrival` events are persisted with `booking_id = NULL`.
+
+Chosen MVP behavior (Option A):
+- apply **bed-based** and **bathroom-based** rules,
+- **skip guest-based** rules for `departure_arrival` when booking context is absent.
+
+Rationale:
+- deterministic,
+- schema-safe,
+- avoids inferring guest counts from implicit turnover pairs.

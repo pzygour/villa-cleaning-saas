@@ -8,6 +8,7 @@ use App\Application\Contracts\BookingRepositoryInterface;
 use App\Application\DTO\CreateBookingDTO;
 use App\Application\DTO\UpdateBookingDTO;
 use App\Application\Validators\BookingValidator;
+use App\Core\Exception\NotFoundException;
 
 final class BookingService
 {
@@ -36,7 +37,13 @@ final class BookingService
 
     public function update(UpdateBookingDTO $dto): void
     {
+        $existing = $this->bookings->findById($dto->id);
+        if ($existing === null) {
+            throw new NotFoundException('Booking not found');
+        }
+
         $data = [
+            'property_id' => $existing['property_id'],
             'booking_reference' => $dto->reference,
             'arrival_date' => $dto->arrivalDate,
             'departure_date' => $dto->departureDate,
@@ -44,7 +51,7 @@ final class BookingService
             'notes' => $dto->notes,
             'status' => 'confirmed',
         ];
-        $this->validator->validate($data + ['property_id' => 'existing']);
+        $this->validator->validate($data);
         $this->bookings->update($dto->id, $data);
     }
 

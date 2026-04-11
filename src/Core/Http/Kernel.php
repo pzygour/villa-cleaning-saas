@@ -4,35 +4,54 @@ declare(strict_types=1);
 
 namespace App\Core\Http;
 
+use App\Application\Services\BathroomTypeItemRuleService;
+use App\Application\Services\BedTypeItemRuleService;
 use App\Application\Services\BookingService;
 use App\Application\Services\CleaningScheduleService;
+use App\Application\Services\GuestItemRuleService;
+use App\Application\Services\ItemCatalogService;
 use App\Application\Services\PropertyCleaningSettingsService;
 use App\Application\Services\PropertyService;
+use App\Application\Services\RequirementCalculationService;
 use App\Application\Services\RoomService;
 use App\Application\Validators\BookingValidator;
 use App\Application\Validators\CleaningSettingsValidator;
+use App\Application\Validators\ItemCatalogValidator;
+use App\Application\Validators\ItemRuleValidator;
 use App\Application\Validators\PropertyValidator;
 use App\Application\Validators\RoomValidator;
 use App\Core\Database\ConnectionFactory;
 use App\Core\Database\TransactionManager;
+use App\Core\Exception\NotFoundException;
 use App\Core\Exception\ValidationException;
 use App\Core\Logging\LoggerInterface;
+use App\Http\Controller\BathroomTypeItemRuleController;
+use App\Http\Controller\BedTypeItemRuleController;
 use App\Http\Controller\BookingController;
 use App\Http\Controller\CleaningScheduleController;
+use App\Http\Controller\GuestItemRuleController;
+use App\Http\Controller\ItemCatalogController;
 use App\Http\Controller\PropertyCleaningSettingsController;
 use App\Http\Controller\PropertyController;
+use App\Http\Controller\RequirementController;
 use App\Http\Controller\RoomController;
 use App\Http\Controller\SetupCatalogController;
 use App\Http\Response\HtmlResponse;
 use App\Http\Response\JsonResponse;
 use App\Http\Response\ResponseInterface;
 use App\Infrastructure\Logging\FileLogger;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlBathroomTypeItemRuleRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlBathroomTypeRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlBedTypeItemRuleRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlBedTypeRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlBookingRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlCleaningEventRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlCleaningEventRequirementRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlGuestItemRuleRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlItemCatalogRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlPropertyCleaningSettingsRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlPropertyRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlRequirementSourceRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlRoomRepository;
 use Throwable;
 
@@ -44,13 +63,17 @@ final class Kernel
     private readonly SetupCatalogController $setupCatalogController;
     private readonly PropertyCleaningSettingsController $cleaningSettingsController;
     private readonly CleaningScheduleController $cleaningScheduleController;
+    private readonly ItemCatalogController $itemCatalogController;
+    private readonly BedTypeItemRuleController $bedTypeItemRuleController;
+    private readonly BathroomTypeItemRuleController $bathroomTypeItemRuleController;
+    private readonly GuestItemRuleController $guestItemRuleController;
+    private readonly RequirementController $requirementController;
     private readonly LoggerInterface $logger;
 
     public function __construct()
     {
         $db = ConnectionFactory::fromConfig(require __DIR__ . '/../../../config/database.php');
         $this->logger = new FileLogger((require __DIR__ . '/../../../config/logging.php')['file']);
-
         $transactionManager = new TransactionManager($db);
 
         $propertyRepository = new MySqlPropertyRepository($db);
@@ -61,10 +84,18 @@ final class Kernel
         $bedTypeRepository = new MySqlBedTypeRepository($db);
         $bathroomTypeRepository = new MySqlBathroomTypeRepository($db);
 
+        $itemCatalogRepository = new MySqlItemCatalogRepository($db);
+        $bedTypeItemRuleRepository = new MySqlBedTypeItemRuleRepository($db);
+        $bathroomTypeItemRuleRepository = new MySqlBathroomTypeItemRuleRepository($db);
+        $guestItemRuleRepository = new MySqlGuestItemRuleRepository($db);
+        $requirementsRepository = new MySqlCleaningEventRequirementRepository($db);
+        $requirementSourceRepository = new MySqlRequirementSourceRepository($db);
+
         $this->propertyController = new PropertyController(new PropertyService($propertyRepository, new PropertyValidator()));
         $this->roomController = new RoomController(new RoomService($roomRepository, new RoomValidator()));
         $this->bookingController = new BookingController(new BookingService($bookingRepository, new BookingValidator()));
         $this->setupCatalogController = new SetupCatalogController($bedTypeRepository, $bathroomTypeRepository);
+
         $this->cleaningSettingsController = new PropertyCleaningSettingsController(
             new PropertyCleaningSettingsService($cleaningSettingsRepository, new CleaningSettingsValidator())
         );
@@ -72,6 +103,20 @@ final class Kernel
             new CleaningScheduleService($bookingRepository, $cleaningEventRepository, $cleaningSettingsRepository, $transactionManager),
             $cleaningEventRepository
         );
+
+        $itemRuleValidator = new ItemRuleValidator();
+        $this->itemCatalogController = new ItemCatalogController(new ItemCatalogService($itemCatalogRepository, new ItemCatalogValidator()));
+        $this->bedTypeItemRuleController = new BedTypeItemRuleController(new BedTypeItemRuleService($bedTypeItemRuleRepository, $itemRuleValidator));
+        $this->bathroomTypeItemRuleController = new BathroomTypeItemRuleController(new BathroomTypeItemRuleService($bathroomTypeItemRuleRepository, $itemRuleValidator));
+        $this->guestItemRuleController = new GuestItemRuleController(new GuestItemRuleService($guestItemRuleRepository, $itemRuleValidator));
+        $this->requirementController = new RequirementController(new RequirementCalculationService(
+            $requirementSourceRepository,
+            $bedTypeItemRuleRepository,
+            $bathroomTypeItemRuleRepository,
+            $guestItemRuleRepository,
+            $requirementsRepository,
+            $transactionManager
+        ));
     }
 
     public function handle(array $server): ResponseInterface
@@ -83,15 +128,16 @@ final class Kernel
             $query = $_GET;
 
             if ($path === '/') {
-                return new HtmlResponse('<h1>Milestone 1 backend is running.</h1>');
+                return new HtmlResponse('<h1>Milestone 2 backend is running.</h1>');
             }
 
             return $this->route($method, $path, $query, $payload);
         } catch (ValidationException $exception) {
             return new JsonResponse(['error' => 'validation_error', 'details' => $exception->errors()], 422);
+        } catch (NotFoundException $exception) {
+            return new JsonResponse(['error' => 'not_found', 'message' => $exception->getMessage()], 404);
         } catch (Throwable $throwable) {
             $this->logger->error('Unhandled exception', ['message' => $throwable->getMessage()]);
-
             return new JsonResponse(['error' => 'server_error'], 500);
         }
     }
@@ -163,6 +209,73 @@ final class Kernel
         }
         if (preg_match('#^/properties/([a-f0-9\-]+)/cleaning-events$#', $path, $matches) === 1 && $method === 'GET') {
             return new JsonResponse($this->cleaningScheduleController->list($matches[1], (string) ($query['from_date'] ?? ''), (string) ($query['to_date'] ?? '')));
+        }
+
+        if ($method === 'GET' && $path === '/items') {
+            return new JsonResponse($this->itemCatalogController->index($query['item_type'] ?? null));
+        }
+        if ($method === 'POST' && $path === '/items') {
+            return new JsonResponse($this->itemCatalogController->create($payload), 201);
+        }
+        if (preg_match('#^/items/([a-f0-9\-]+)$#', $path, $matches) === 1) {
+            if ($method === 'PUT') {
+                return new JsonResponse($this->itemCatalogController->update($matches[1], $payload));
+            }
+            if ($method === 'DELETE') {
+                return new JsonResponse($this->itemCatalogController->delete($matches[1]));
+            }
+        }
+
+        if ($method === 'GET' && $path === '/rules/bed-type-items') {
+            return new JsonResponse($this->bedTypeItemRuleController->index($query['trigger_type'] ?? null));
+        }
+        if ($method === 'POST' && $path === '/rules/bed-type-items') {
+            return new JsonResponse($this->bedTypeItemRuleController->create($payload), 201);
+        }
+        if (preg_match('#^/rules/bed-type-items/([a-f0-9\-]+)$#', $path, $matches) === 1) {
+            if ($method === 'PUT') {
+                return new JsonResponse($this->bedTypeItemRuleController->update($matches[1], $payload));
+            }
+            if ($method === 'DELETE') {
+                return new JsonResponse($this->bedTypeItemRuleController->delete($matches[1]));
+            }
+        }
+
+        if ($method === 'GET' && $path === '/rules/bathroom-type-items') {
+            return new JsonResponse($this->bathroomTypeItemRuleController->index($query['trigger_type'] ?? null));
+        }
+        if ($method === 'POST' && $path === '/rules/bathroom-type-items') {
+            return new JsonResponse($this->bathroomTypeItemRuleController->create($payload), 201);
+        }
+        if (preg_match('#^/rules/bathroom-type-items/([a-f0-9\-]+)$#', $path, $matches) === 1) {
+            if ($method === 'PUT') {
+                return new JsonResponse($this->bathroomTypeItemRuleController->update($matches[1], $payload));
+            }
+            if ($method === 'DELETE') {
+                return new JsonResponse($this->bathroomTypeItemRuleController->delete($matches[1]));
+            }
+        }
+
+        if ($method === 'GET' && $path === '/rules/guest-items') {
+            return new JsonResponse($this->guestItemRuleController->index($query['trigger_type'] ?? null));
+        }
+        if ($method === 'POST' && $path === '/rules/guest-items') {
+            return new JsonResponse($this->guestItemRuleController->create($payload), 201);
+        }
+        if (preg_match('#^/rules/guest-items/([a-f0-9\-]+)$#', $path, $matches) === 1) {
+            if ($method === 'PUT') {
+                return new JsonResponse($this->guestItemRuleController->update($matches[1], $payload));
+            }
+            if ($method === 'DELETE') {
+                return new JsonResponse($this->guestItemRuleController->delete($matches[1]));
+            }
+        }
+
+        if (preg_match('#^/requirements/events/([a-f0-9\-]+)/recalculate$#', $path, $matches) === 1 && $method === 'POST') {
+            return new JsonResponse($this->requirementController->recalculateEvent($matches[1]));
+        }
+        if (preg_match('#^/requirements/properties/([a-f0-9\-]+)/recalculate$#', $path, $matches) === 1 && $method === 'POST') {
+            return new JsonResponse($this->requirementController->recalculatePropertyRange($matches[1], $payload));
         }
 
         return new JsonResponse(['error' => 'not_found'], 404);

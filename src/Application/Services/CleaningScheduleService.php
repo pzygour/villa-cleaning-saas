@@ -109,6 +109,7 @@ final class CleaningScheduleService
             }
 
             $departureKeys = $departures[$date];
+            // Turnover pairing strategy: pair arrivals and departures for the same property/date in insertion order.
             while ($arrivalKeys !== [] && $departureKeys !== []) {
                 $arrivalKey = array_shift($arrivalKeys);
                 $departureKey = array_shift($departureKeys);

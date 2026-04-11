@@ -22,10 +22,24 @@ final class MySqlCleaningEventRepository implements CleaningEventRepositoryInter
 
     public function createMany(array $events): void
     {
-        $stmt = $this->connection->prepare('INSERT INTO cleaning_events (id, property_id, booking_id, event_date, event_type, status, operational_notes, generated_by, created_at, updated_at)
+        $stmt = $this->connection->prepare('INSERT IGNORE INTO cleaning_events (id, property_id, booking_id, event_date, event_type, status, operational_notes, generated_by, created_at, updated_at)
         VALUES (:id,:property_id,:booking_id,:event_date,:event_type,:status,:operational_notes,:generated_by,NOW(),NOW())');
 
+        $seen = [];
         foreach ($events as $event) {
+            $key = sprintf(
+                '%s|%s|%s|%s|%s',
+                $event['property_id'],
+                $event['event_date'],
+                $event['event_type'],
+                $event['booking_id'] ?? 'null',
+                $event['generated_by']
+            );
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+
             $stmt->execute([
                 'id' => Uuid::v4(),
                 'property_id' => $event['property_id'],
