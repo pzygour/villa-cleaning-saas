@@ -326,3 +326,11 @@ Rationale:
 - deterministic,
 - schema-safe,
 - avoids inferring guest counts from implicit turnover pairs.
+
+---
+
+## Milestone 3 Note: Operational Schedule and Assignments
+
+- Assignment write logic is separated from schedule read logic.
+- Schedule queries read persisted `cleaning_events`, `cleaning_event_assignments`, and `cleaning_event_requirements` only.
+- Requirement totals endpoints are query-only and do not trigger recalculation.

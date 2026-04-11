@@ -7,14 +7,20 @@ namespace App\Core\Http;
 use App\Application\Services\BathroomTypeItemRuleService;
 use App\Application\Services\BedTypeItemRuleService;
 use App\Application\Services\BookingService;
+use App\Application\Services\CleanerOperationsService;
+use App\Application\Services\CleaningEventAssignmentService;
+use App\Application\Services\CleaningScheduleQueryService;
 use App\Application\Services\CleaningScheduleService;
 use App\Application\Services\GuestItemRuleService;
 use App\Application\Services\ItemCatalogService;
 use App\Application\Services\PropertyCleaningSettingsService;
 use App\Application\Services\PropertyService;
 use App\Application\Services\RequirementCalculationService;
+use App\Application\Services\RequirementTotalsQueryService;
 use App\Application\Services\RoomService;
+use App\Application\Services\UserQueryService;
 use App\Application\Validators\BookingValidator;
+use App\Application\Validators\CleaningAssignmentValidator;
 use App\Application\Validators\CleaningSettingsValidator;
 use App\Application\Validators\ItemCatalogValidator;
 use App\Application\Validators\ItemRuleValidator;
@@ -28,13 +34,16 @@ use App\Core\Logging\LoggerInterface;
 use App\Http\Controller\BathroomTypeItemRuleController;
 use App\Http\Controller\BedTypeItemRuleController;
 use App\Http\Controller\BookingController;
+use App\Http\Controller\CleaningAssignmentController;
 use App\Http\Controller\CleaningScheduleController;
 use App\Http\Controller\GuestItemRuleController;
 use App\Http\Controller\ItemCatalogController;
 use App\Http\Controller\PropertyCleaningSettingsController;
 use App\Http\Controller\PropertyController;
 use App\Http\Controller\RequirementController;
+use App\Http\Controller\RequirementTotalsController;
 use App\Http\Controller\RoomController;
+use App\Http\Controller\ScheduleQueryController;
 use App\Http\Controller\SetupCatalogController;
 use App\Http\Response\HtmlResponse;
 use App\Http\Response\JsonResponse;
@@ -45,14 +54,18 @@ use App\Infrastructure\Persistence\MySql\Repository\MySqlBathroomTypeRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlBedTypeItemRuleRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlBedTypeRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlBookingRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlCleaningEventAssignmentRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlCleaningEventRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlCleaningEventRequirementRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlCleaningScheduleQueryRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlGuestItemRuleRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlItemCatalogRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlPropertyCleaningSettingsRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlPropertyRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlRequirementSourceRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlRequirementTotalsQueryRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlRoomRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlUserQueryRepository;
 use Throwable;
 
 final class Kernel
@@ -68,6 +81,9 @@ final class Kernel
     private readonly BathroomTypeItemRuleController $bathroomTypeItemRuleController;
     private readonly GuestItemRuleController $guestItemRuleController;
     private readonly RequirementController $requirementController;
+    private readonly CleaningAssignmentController $assignmentController;
+    private readonly ScheduleQueryController $scheduleQueryController;
+    private readonly RequirementTotalsController $requirementTotalsController;
     private readonly LoggerInterface $logger;
 
     public function __construct()
@@ -90,6 +106,10 @@ final class Kernel
         $guestItemRuleRepository = new MySqlGuestItemRuleRepository($db);
         $requirementsRepository = new MySqlCleaningEventRequirementRepository($db);
         $requirementSourceRepository = new MySqlRequirementSourceRepository($db);
+        $assignmentRepository = new MySqlCleaningEventAssignmentRepository($db);
+        $scheduleQueryRepository = new MySqlCleaningScheduleQueryRepository($db);
+        $requirementTotalsRepository = new MySqlRequirementTotalsQueryRepository($db);
+        $userQueryRepository = new MySqlUserQueryRepository($db);
 
         $this->propertyController = new PropertyController(new PropertyService($propertyRepository, new PropertyValidator()));
         $this->roomController = new RoomController(new RoomService($roomRepository, new RoomValidator()));
@@ -117,6 +137,19 @@ final class Kernel
             $requirementsRepository,
             $transactionManager
         ));
+
+        $this->assignmentController = new CleaningAssignmentController(
+            new CleaningEventAssignmentService($assignmentRepository, new CleaningAssignmentValidator(), $transactionManager),
+            new UserQueryService($userQueryRepository)
+        );
+
+        $scheduleQueryService = new CleaningScheduleQueryService($scheduleQueryRepository);
+        $this->scheduleQueryController = new ScheduleQueryController(
+            $scheduleQueryService,
+            new CleanerOperationsService($scheduleQueryService)
+        );
+
+        $this->requirementTotalsController = new RequirementTotalsController(new RequirementTotalsQueryService($requirementTotalsRepository));
     }
 
     public function handle(array $server): ResponseInterface
@@ -128,7 +161,7 @@ final class Kernel
             $query = $_GET;
 
             if ($path === '/') {
-                return new HtmlResponse('<h1>Milestone 2 backend is running.</h1>');
+                return new HtmlResponse('<h1>Milestone 3 backend is running.</h1>');
             }
 
             return $this->route($method, $path, $query, $payload);
@@ -276,6 +309,42 @@ final class Kernel
         }
         if (preg_match('#^/requirements/properties/([a-f0-9\-]+)/recalculate$#', $path, $matches) === 1 && $method === 'POST') {
             return new JsonResponse($this->requirementController->recalculatePropertyRange($matches[1], $payload));
+        }
+
+        if (preg_match('#^/cleaning-events/([a-f0-9\-]+)/assignments$#', $path, $matches) === 1 && $method === 'POST') {
+            return new JsonResponse($this->assignmentController->assign($matches[1], $payload));
+        }
+        if (preg_match('#^/cleaning-events/([a-f0-9\-]+)/assignments/([a-f0-9\-]+)/status$#', $path, $matches) === 1 && $method === 'PATCH') {
+            return new JsonResponse($this->assignmentController->updateStatus($matches[1], $matches[2], $payload));
+        }
+        if ($method === 'GET' && $path === '/users/cleaners') {
+            return new JsonResponse($this->assignmentController->activeCleaners());
+        }
+
+        if (preg_match('#^/schedule/property/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->scheduleQueryController->byProperty($matches[1], (string) ($query['from_date'] ?? ''), (string) ($query['to_date'] ?? '')));
+        }
+        if ($method === 'GET' && $path === '/schedule/all') {
+            return new JsonResponse($this->scheduleQueryController->all((string) ($query['from_date'] ?? ''), (string) ($query['to_date'] ?? '')));
+        }
+        if (preg_match('#^/schedule/cleaner/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->scheduleQueryController->byCleaner($matches[1], (string) ($query['from_date'] ?? ''), (string) ($query['to_date'] ?? '')));
+        }
+        if ($method === 'GET' && $path === '/schedule/day') {
+            return new JsonResponse($this->scheduleQueryController->byDay((string) ($query['date'] ?? '')));
+        }
+        if (preg_match('#^/cleaners/([a-f0-9\-]+)/operations$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->scheduleQueryController->cleanerOperations($matches[1], (string) ($query['from_date'] ?? ''), (string) ($query['to_date'] ?? '')));
+        }
+
+        if ($method === 'GET' && $path === '/requirements/totals/events') {
+            return new JsonResponse($this->requirementTotalsController->byEvents((string) ($query['event_ids'] ?? '')));
+        }
+        if ($method === 'GET' && $path === '/requirements/totals/day') {
+            return new JsonResponse($this->requirementTotalsController->byDay($query['property_id'] ?? null, (string) ($query['date'] ?? '')));
+        }
+        if (preg_match('#^/requirements/totals/property/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->requirementTotalsController->byPropertyRange($matches[1], (string) ($query['from_date'] ?? ''), (string) ($query['to_date'] ?? '')));
         }
 
         return new JsonResponse(['error' => 'not_found'], 404);
