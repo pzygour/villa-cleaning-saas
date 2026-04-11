@@ -12,6 +12,10 @@ use App\Application\Services\CleaningEventAssignmentService;
 use App\Application\Services\CleaningScheduleQueryService;
 use App\Application\Services\CleaningScheduleService;
 use App\Application\Services\GuestItemRuleService;
+use App\Application\Services\InventoryLedgerService;
+use App\Application\Services\InventoryLocationService;
+use App\Application\Services\InventoryQueryService;
+use App\Application\Services\InventoryReservationService;
 use App\Application\Services\ItemCatalogService;
 use App\Application\Services\PropertyCleaningSettingsService;
 use App\Application\Services\PropertyService;
@@ -22,6 +26,8 @@ use App\Application\Services\UserQueryService;
 use App\Application\Validators\BookingValidator;
 use App\Application\Validators\CleaningAssignmentValidator;
 use App\Application\Validators\CleaningSettingsValidator;
+use App\Application\Validators\InventoryLocationValidator;
+use App\Application\Validators\InventoryTransactionValidator;
 use App\Application\Validators\ItemCatalogValidator;
 use App\Application\Validators\ItemRuleValidator;
 use App\Application\Validators\PropertyValidator;
@@ -37,6 +43,10 @@ use App\Http\Controller\BookingController;
 use App\Http\Controller\CleaningAssignmentController;
 use App\Http\Controller\CleaningScheduleController;
 use App\Http\Controller\GuestItemRuleController;
+use App\Http\Controller\InventoryLocationController;
+use App\Http\Controller\InventoryQueryController;
+use App\Http\Controller\InventoryReservationController;
+use App\Http\Controller\InventoryTransactionController;
 use App\Http\Controller\ItemCatalogController;
 use App\Http\Controller\PropertyCleaningSettingsController;
 use App\Http\Controller\PropertyController;
@@ -59,6 +69,10 @@ use App\Infrastructure\Persistence\MySql\Repository\MySqlCleaningEventRepository
 use App\Infrastructure\Persistence\MySql\Repository\MySqlCleaningEventRequirementRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlCleaningScheduleQueryRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlGuestItemRuleRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlInventoryLedgerRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlInventoryLocationRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlInventoryQueryRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlInventoryReservationRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlItemCatalogRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlPropertyCleaningSettingsRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlPropertyRepository;
@@ -84,6 +98,10 @@ final class Kernel
     private readonly CleaningAssignmentController $assignmentController;
     private readonly ScheduleQueryController $scheduleQueryController;
     private readonly RequirementTotalsController $requirementTotalsController;
+    private readonly InventoryLocationController $inventoryLocationController;
+    private readonly InventoryTransactionController $inventoryTransactionController;
+    private readonly InventoryReservationController $inventoryReservationController;
+    private readonly InventoryQueryController $inventoryQueryController;
     private readonly LoggerInterface $logger;
 
     public function __construct()
@@ -110,6 +128,11 @@ final class Kernel
         $scheduleQueryRepository = new MySqlCleaningScheduleQueryRepository($db);
         $requirementTotalsRepository = new MySqlRequirementTotalsQueryRepository($db);
         $userQueryRepository = new MySqlUserQueryRepository($db);
+
+        $inventoryLocationRepository = new MySqlInventoryLocationRepository($db);
+        $inventoryLedgerRepository = new MySqlInventoryLedgerRepository($db);
+        $inventoryReservationRepository = new MySqlInventoryReservationRepository($db);
+        $inventoryQueryRepository = new MySqlInventoryQueryRepository($db);
 
         $this->propertyController = new PropertyController(new PropertyService($propertyRepository, new PropertyValidator()));
         $this->roomController = new RoomController(new RoomService($roomRepository, new RoomValidator()));
@@ -150,6 +173,12 @@ final class Kernel
         );
 
         $this->requirementTotalsController = new RequirementTotalsController(new RequirementTotalsQueryService($requirementTotalsRepository));
+
+        $inventoryLedgerService = new InventoryLedgerService($inventoryLedgerRepository, new InventoryTransactionValidator(), $transactionManager);
+        $this->inventoryLocationController = new InventoryLocationController(new InventoryLocationService($inventoryLocationRepository, new InventoryLocationValidator()));
+        $this->inventoryTransactionController = new InventoryTransactionController($inventoryLedgerService);
+        $this->inventoryReservationController = new InventoryReservationController(new InventoryReservationService($inventoryReservationRepository, $inventoryLedgerService, $transactionManager));
+        $this->inventoryQueryController = new InventoryQueryController(new InventoryQueryService($inventoryQueryRepository));
     }
 
     public function handle(array $server): ResponseInterface
@@ -161,7 +190,7 @@ final class Kernel
             $query = $_GET;
 
             if ($path === '/') {
-                return new HtmlResponse('<h1>Milestone 3 backend is running.</h1>');
+                return new HtmlResponse('<h1>Milestone 4 backend is running.</h1>');
             }
 
             return $this->route($method, $path, $query, $payload);
@@ -345,6 +374,48 @@ final class Kernel
         }
         if (preg_match('#^/requirements/totals/property/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
             return new JsonResponse($this->requirementTotalsController->byPropertyRange($matches[1], (string) ($query['from_date'] ?? ''), (string) ($query['to_date'] ?? '')));
+        }
+
+        if ($method === 'GET' && $path === '/inventory/locations') {
+            return new JsonResponse($this->inventoryLocationController->index($query['location_type'] ?? null));
+        }
+        if ($method === 'POST' && $path === '/inventory/locations') {
+            return new JsonResponse($this->inventoryLocationController->create($payload), 201);
+        }
+        if (preg_match('#^/inventory/locations/([a-f0-9\-]+)$#', $path, $matches) === 1) {
+            if ($method === 'PUT') {
+                return new JsonResponse($this->inventoryLocationController->update($matches[1], $payload));
+            }
+            if ($method === 'DELETE') {
+                return new JsonResponse($this->inventoryLocationController->delete($matches[1]));
+            }
+        }
+
+        if ($method === 'POST' && $path === '/inventory/transactions') {
+            return new JsonResponse($this->inventoryTransactionController->post($payload), 201);
+        }
+
+        if (preg_match('#^/inventory/reservations/events/([a-f0-9\-]+)/reserve$#', $path, $matches) === 1 && $method === 'POST') {
+            return new JsonResponse($this->inventoryReservationController->reserve($matches[1], $payload));
+        }
+        if (preg_match('#^/inventory/reservations/events/([a-f0-9\-]+)/unreserve$#', $path, $matches) === 1 && $method === 'POST') {
+            return new JsonResponse($this->inventoryReservationController->unreserve($matches[1], $payload));
+        }
+
+        if (preg_match('#^/inventory/balances/location/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->inventoryQueryController->balancesByLocation($matches[1]));
+        }
+        if (preg_match('#^/inventory/balances/item/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->inventoryQueryController->balancesByItem($matches[1]));
+        }
+        if (preg_match('#^/inventory/movements/location/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->inventoryQueryController->movementsByLocation($matches[1], (string) ($query['from_date'] ?? ''), (string) ($query['to_date'] ?? '')));
+        }
+        if (preg_match('#^/inventory/movements/item/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->inventoryQueryController->movementsByItem($matches[1], (string) ($query['from_date'] ?? ''), (string) ($query['to_date'] ?? '')));
+        }
+        if (preg_match('#^/inventory/availability/events/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->inventoryQueryController->eventAvailability($matches[1], (string) ($query['location_id'] ?? '')));
         }
 
         return new JsonResponse(['error' => 'not_found'], 404);
