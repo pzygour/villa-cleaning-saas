@@ -17,6 +17,8 @@ use App\Application\Services\InventoryLocationService;
 use App\Application\Services\InventoryQueryService;
 use App\Application\Services\InventoryReservationService;
 use App\Application\Services\ItemCatalogService;
+use App\Application\Services\LaundryHandoverService;
+use App\Application\Services\LaundryQueryService;
 use App\Application\Services\PropertyCleaningSettingsService;
 use App\Application\Services\PropertyService;
 use App\Application\Services\RequirementCalculationService;
@@ -30,6 +32,7 @@ use App\Application\Validators\InventoryLocationValidator;
 use App\Application\Validators\InventoryTransactionValidator;
 use App\Application\Validators\ItemCatalogValidator;
 use App\Application\Validators\ItemRuleValidator;
+use App\Application\Validators\LaundryHandoverValidator;
 use App\Application\Validators\PropertyValidator;
 use App\Application\Validators\RoomValidator;
 use App\Core\Database\ConnectionFactory;
@@ -48,6 +51,8 @@ use App\Http\Controller\InventoryQueryController;
 use App\Http\Controller\InventoryReservationController;
 use App\Http\Controller\InventoryTransactionController;
 use App\Http\Controller\ItemCatalogController;
+use App\Http\Controller\LaundryHandoverController;
+use App\Http\Controller\LaundryQueryController;
 use App\Http\Controller\PropertyCleaningSettingsController;
 use App\Http\Controller\PropertyController;
 use App\Http\Controller\RequirementController;
@@ -74,6 +79,8 @@ use App\Infrastructure\Persistence\MySql\Repository\MySqlInventoryLocationReposi
 use App\Infrastructure\Persistence\MySql\Repository\MySqlInventoryQueryRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlInventoryReservationRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlItemCatalogRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlLaundryHandoverRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlLaundryQueryRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlPropertyCleaningSettingsRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlPropertyRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlRequirementSourceRepository;
@@ -102,6 +109,8 @@ final class Kernel
     private readonly InventoryTransactionController $inventoryTransactionController;
     private readonly InventoryReservationController $inventoryReservationController;
     private readonly InventoryQueryController $inventoryQueryController;
+    private readonly LaundryHandoverController $laundryHandoverController;
+    private readonly LaundryQueryController $laundryQueryController;
     private readonly LoggerInterface $logger;
 
     public function __construct()
@@ -133,6 +142,8 @@ final class Kernel
         $inventoryLedgerRepository = new MySqlInventoryLedgerRepository($db);
         $inventoryReservationRepository = new MySqlInventoryReservationRepository($db);
         $inventoryQueryRepository = new MySqlInventoryQueryRepository($db);
+        $laundryHandoverRepository = new MySqlLaundryHandoverRepository($db);
+        $laundryQueryRepository = new MySqlLaundryQueryRepository($db);
 
         $this->propertyController = new PropertyController(new PropertyService($propertyRepository, new PropertyValidator()));
         $this->roomController = new RoomController(new RoomService($roomRepository, new RoomValidator()));
@@ -179,6 +190,10 @@ final class Kernel
         $this->inventoryTransactionController = new InventoryTransactionController($inventoryLedgerService);
         $this->inventoryReservationController = new InventoryReservationController(new InventoryReservationService($inventoryReservationRepository, $inventoryLedgerService, $transactionManager));
         $this->inventoryQueryController = new InventoryQueryController(new InventoryQueryService($inventoryQueryRepository));
+        $this->laundryHandoverController = new LaundryHandoverController(
+            new LaundryHandoverService($laundryHandoverRepository, $inventoryLedgerService, new LaundryHandoverValidator(), $transactionManager)
+        );
+        $this->laundryQueryController = new LaundryQueryController(new LaundryQueryService($laundryQueryRepository));
     }
 
     public function handle(array $server): ResponseInterface
@@ -190,7 +205,7 @@ final class Kernel
             $query = $_GET;
 
             if ($path === '/') {
-                return new HtmlResponse('<h1>Milestone 4 backend is running.</h1>');
+                return new HtmlResponse('<h1>Milestone 5 backend is running.</h1>');
             }
 
             return $this->route($method, $path, $query, $payload);
@@ -416,6 +431,29 @@ final class Kernel
         }
         if (preg_match('#^/inventory/availability/events/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
             return new JsonResponse($this->inventoryQueryController->eventAvailability($matches[1], (string) ($query['location_id'] ?? '')));
+        }
+
+        if ($method === 'POST' && $path === '/laundry/handovers') {
+            return new JsonResponse($this->laundryHandoverController->create($payload), 201);
+        }
+        if (preg_match('#^/laundry/handovers/([a-f0-9\-]+)/returns$#', $path, $matches) === 1 && $method === 'POST') {
+            return new JsonResponse($this->laundryHandoverController->processReturn($matches[1], $payload));
+        }
+        if ($method === 'GET' && $path === '/laundry/handovers/open') {
+            return new JsonResponse($this->laundryQueryController->openHandovers());
+        }
+        if (preg_match('#^/laundry/handovers/property/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->laundryQueryController->handoversByPropertyDateRange(
+                $matches[1],
+                (string) ($query['from_date'] ?? ''),
+                (string) ($query['to_date'] ?? '')
+            ));
+        }
+        if (preg_match('#^/laundry/handovers/([a-f0-9\-]+)/pending-returns$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->laundryQueryController->pendingReturnQuantities($matches[1]));
+        }
+        if (preg_match('#^/laundry/handovers/([a-f0-9\-]+)$#', $path, $matches) === 1 && $method === 'GET') {
+            return new JsonResponse($this->laundryQueryController->handoverDetail($matches[1]));
         }
 
         return new JsonResponse(['error' => 'not_found'], 404);

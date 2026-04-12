@@ -8,7 +8,7 @@ use App\Core\Exception\ValidationException;
 
 final class InventoryTransactionValidator
 {
-    private const TYPES = ['in', 'out', 'adjustment', 'reserve', 'unreserve'];
+    private const TYPES = ['in', 'out', 'adjustment', 'laundry_out', 'laundry_in', 'reserve', 'unreserve'];
 
     public function validate(array $data): void
     {

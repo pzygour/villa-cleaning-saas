@@ -46,9 +46,11 @@ final class InventoryLedgerService
 
         switch ($data['transaction_type']) {
             case 'in':
+            case 'laundry_in':
                 $onHand += $qty;
                 break;
             case 'out':
+            case 'laundry_out':
                 if ($onHand - $qty < 0) {
                     throw new DomainException('Insufficient on_hand quantity');
                 }

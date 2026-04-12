@@ -2,7 +2,7 @@
 
 Framework-less PHP 8.1 + MySQL backend for rental property operations.
 
-## Milestone 1-3 implemented scope
+## Milestone 1-5 implemented scope
 
 - Milestone 1 foundations: properties, rooms, bookings, cleaning generation, cleaning settings
 - Milestone 2 foundations: item catalog, requirement rules, requirement snapshot recalculation
@@ -13,8 +13,18 @@ Framework-less PHP 8.1 + MySQL backend for rental property operations.
   - requirement totals query endpoints (event/day/property-range)
   - cleaner-facing assigned events query
   - active cleaner listing for assignment use
+- Milestone 4 inventory:
+  - inventory locations CRUD
+  - inventory ledger transactions and balances sync
+  - event requirement reserve/unreserve
+  - inventory balances, movements and event availability queries
+- Milestone 5 laundry workflow:
+  - laundry handover create with laundry-out inventory ledger effects
+  - partial/full returns with laundry-in inventory ledger effects
+  - handover/item status lifecycle management
+  - laundry query endpoints (open/property range/detail/pending returns)
 
-## Run Milestone 3 locally
+## Run Milestone 5 locally
 
 1. Install dependencies:
    ```bash
@@ -52,9 +62,53 @@ Framework-less PHP 8.1 + MySQL backend for rental property operations.
 - `GET /requirements/totals/day?date=YYYY-MM-DD&property_id={optionalPropertyId}`
 - `GET /requirements/totals/property/{propertyId}?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`
 
-## Remaining work for Milestone 4
+### Milestone 4 inventory endpoints
+- `GET /inventory/locations?location_type={optional}`
+- `POST /inventory/locations`
+- `PUT /inventory/locations/{locationId}`
+- `DELETE /inventory/locations/{locationId}`
+- `POST /inventory/transactions`
+- `POST /inventory/reservations/events/{eventId}/reserve`
+- `POST /inventory/reservations/events/{eventId}/unreserve`
+- `GET /inventory/balances/location/{locationId}`
+- `GET /inventory/balances/item/{itemId}`
+- `GET /inventory/movements/location/{locationId}?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`
+- `GET /inventory/movements/item/{itemId}?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`
+- `GET /inventory/availability/events/{eventId}?location_id={locationId}`
 
-- Inventory movement lifecycle endpoints (in/out/adjustment/reserve/unreserve)
-- Laundry handover and returns workflows
+### Milestone 5 laundry endpoints
+- `POST /laundry/handovers`
+  - body:
+    ```json
+    {
+      "property_id": "optional-property-uuid",
+      "from_location_id": "uuid",
+      "to_location_id": "uuid",
+      "expected_return_date": "2026-05-01 12:00:00",
+      "created_by_user_id": "optional-user-uuid",
+      "note": "optional",
+      "items": [
+        {"item_id": "uuid", "quantity_sent": 20}
+      ]
+    }
+    ```
+- `POST /laundry/handovers/{handoverId}/returns`
+  - body:
+    ```json
+    {
+      "created_by_user_id": "optional-user-uuid",
+      "note": "optional",
+      "items": [
+        {"item_id": "uuid", "quantity_returned": 5}
+      ]
+    }
+    ```
+- `GET /laundry/handovers/open`
+- `GET /laundry/handovers/property/{propertyId}?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`
+- `GET /laundry/handovers/{handoverId}`
+- `GET /laundry/handovers/{handoverId}/pending-returns`
+
+## Remaining work after Milestone 5 backend
+
 - Role-aware authentication and permissions
 - Audit/reporting enhancements and pagination/filtering hardening
