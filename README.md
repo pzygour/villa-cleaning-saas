@@ -112,3 +112,18 @@ Framework-less PHP 8.1 + MySQL backend for rental property operations.
 
 - Role-aware authentication and permissions
 - Audit/reporting enhancements and pagination/filtering hardening
+
+## Frontend MVP (Phase 3, Milestone 1)
+
+- Server-rendered admin pages are available under `/admin/`.
+- Vue is used on the schedule page for interactive filtering and assignment actions.
+
+Main pages:
+- `/admin/index.php`
+- `/admin/properties.php`
+- `/admin/rooms.php?property_id={propertyId}`
+- `/admin/bookings.php`
+- `/admin/schedule.php`
+- `/admin/requirements.php`
+- `/admin/inventory.php`
+- `/admin/laundry.php`
