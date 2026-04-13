@@ -47,7 +47,8 @@ ob_start();
     async function loadBookings() {
         const q = new URLSearchParams(new FormData(filterForm));
         const res = await fetch(`/bookings?${q.toString()}`);
-        const rows = await res.json();
+        const data = await res.json();
+        const rows = data.data || [];
         table.innerHTML = rows.map((b) => `
             <tr>
                 <td>${b.booking_reference || '-'}</td>

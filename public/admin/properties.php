@@ -48,7 +48,8 @@ ob_start();
     async function loadProperties() {
         const res = await fetch('/properties');
         const data = await res.json();
-        table.innerHTML = data.map((p) => `
+        const rows = data.data || [];
+        table.innerHTML = rows.map((p) => `
             <tr>
                 <td>${p.code}</td>
                 <td>${p.name}</td>

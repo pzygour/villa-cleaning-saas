@@ -22,3 +22,9 @@ th, td { border: 1px solid #d9dee7; padding: 8px; text-align: left; vertical-ali
 pre { background: #111827; color: #e5e7eb; padding: 10px; border-radius: 6px; overflow: auto; }
 .message { color: #374151; }
 a { color: #0f3fb8; }
+.banner { padding: 8px 10px; border-radius: 4px; margin: 8px 0; }
+.banner.ok { background: #e7f6ec; color: #14532d; border: 1px solid #9ed8af; }
+.banner.error { background: #fdeaea; color: #991b1b; border: 1px solid #efb2b2; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row-editor { display: grid; grid-template-columns: 1fr 90px auto; gap: 8px; margin-bottom: 6px; }
+.actions-inline { display: flex; gap: 8px; margin-top: 10px; }

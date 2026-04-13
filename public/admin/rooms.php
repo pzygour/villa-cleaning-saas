@@ -9,71 +9,50 @@ $propertyId = (string) ($_GET['property_id'] ?? '');
 ob_start();
 ?>
 <section class="panel">
-    <h3>Rooms for Property</h3>
-    <p>Property ID: <code id="property-id-label"><?= htmlspecialchars($propertyId) ?></code></p>
-    <form id="room-form" class="form-grid">
-        <input type="hidden" name="id">
-        <input type="hidden" name="property_id" value="<?= htmlspecialchars($propertyId) ?>">
-        <label>Name <input type="text" name="name" required></label>
-        <label>Room Type <input type="text" name="room_type" required></label>
-        <label>Sort Order <input type="number" name="sort_order" value="0" required></label>
-        <div class="full"><button type="submit">Save Room</button></div>
-    </form>
+    <h3>Room List & Setup</h3>
+    <p>Property ID: <code><?= htmlspecialchars($propertyId) ?></code></p>
+    <div id="rooms-app" data-property-id="<?= htmlspecialchars($propertyId) ?>">
+        <p v-if="feedback.message" :class="['banner', feedback.type]">{{ feedback.message }}</p>
+
+        <form class="form-grid" @submit.prevent="saveRoom">
+            <input type="hidden" v-model="roomForm.id">
+            <label>Name <input type="text" v-model="roomForm.name" required></label>
+            <label>Room Type <input type="text" v-model="roomForm.room_type" required></label>
+            <label>Sort Order <input type="number" v-model.number="roomForm.sort_order" required></label>
+            <div><button type="submit">{{ roomForm.id ? 'Update Room' : 'Create Room' }}</button></div>
+            <div><button type="button" @click="resetRoomForm">Reset</button></div>
+        </form>
+
+        <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Beds</th><th>Bathrooms</th><th>Actions</th></tr></thead>
+            <tbody>
+                <tr v-for="room in rooms" :key="room.id">
+                    <td>{{ room.name }}</td>
+                    <td>{{ room.room_type }}</td>
+                    <td>{{ room.beds_json || '-' }}</td>
+                    <td>{{ room.bathrooms_json || '-' }}</td>
+                    <td>
+                        <button @click="editRoom(room)">Edit</button>
+                        <button @click="selectRoomForSetup(room)">Setup Beds/Bathrooms</button>
+                    </td>
+                </tr>
+                <tr v-if="rooms.length === 0"><td colspan="5">No rooms found.</td></tr>
+            </tbody>
+        </table>
+
+        <room-setup-editor
+            v-if="selectedRoom"
+            :room="selectedRoom"
+            :bed-types="bedTypes"
+            :bathroom-types="bathroomTypes"
+            @saved="onSetupSaved"
+            @cancel="selectedRoom = null"
+        ></room-setup-editor>
+    </div>
 </section>
-
-<section class="panel">
-    <table>
-        <thead><tr><th>Name</th><th>Type</th><th>Beds</th><th>Bathrooms</th><th>Actions</th></tr></thead>
-        <tbody id="rooms-table"></tbody>
-    </table>
-</section>
-
-<script>
-(async function() {
-    const propertyId = <?= json_encode($propertyId, JSON_THROW_ON_ERROR) ?>;
-    const form = document.getElementById('room-form');
-    const table = document.getElementById('rooms-table');
-
-    if (!propertyId) {
-        table.innerHTML = '<tr><td colspan="5">Missing property_id query parameter.</td></tr>';
-        return;
-    }
-
-    async function loadRooms() {
-        const res = await fetch(`/rooms?property_id=${encodeURIComponent(propertyId)}`);
-        const rows = await res.json();
-        table.innerHTML = rows.map((r) => `
-            <tr>
-                <td>${r.name}</td><td>${r.room_type}</td><td>${r.beds_json || '-'}</td><td>${r.bathrooms_json || '-'}</td>
-                <td><button data-edit='${JSON.stringify(r)}'>Edit</button></td>
-            </tr>`).join('');
-
-        table.querySelectorAll('button[data-edit]').forEach((b) => b.addEventListener('click', () => {
-            const r = JSON.parse(b.dataset.edit);
-            form.id.value = r.id;
-            form.name.value = r.name;
-            form.room_type.value = r.room_type;
-            form.sort_order.value = r.sort_order;
-        }));
-    }
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const payload = Object.fromEntries(new FormData(form).entries());
-        const id = payload.id || '';
-        delete payload.id;
-        const endpoint = id ? `/rooms/${id}` : '/rooms';
-        const method = id ? 'PUT' : 'POST';
-
-        await fetch(endpoint, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        form.reset();
-        form.property_id.value = propertyId;
-        await loadRooms();
-    });
-
-    await loadRooms();
-})();
-</script>
 <?php
 $html = (string) ob_get_clean();
-render_admin_page('Rooms', $html);
+render_admin_page('Rooms', $html, [
+    'https://unpkg.com/vue@3/dist/vue.global.prod.js',
+    '/assets/js/components/room-setup-editor.js',
+]);
