@@ -8,6 +8,7 @@
                 openHandovers: [],
                 detailHandoverId: '',
                 detailData: null,
+                detailRows: [],
                 pendingData: null,
                 createForm: {
                     property_id: '',
@@ -90,6 +91,16 @@
                     this.setFeedback('error', `Return failed: ${data.error || 'request_failed'}`);
                 }
             },
+            statusClass(status) {
+                if (status === 'closed' || status === 'returned') return 'row-success';
+                if (status === 'partially_returned') return 'row-warning';
+                return '';
+            },
+            openDetail(handoverId) {
+                this.detailHandoverId = handoverId;
+                this.loadDetail();
+                this.loadPending();
+            },
             async loadOpen() {
                 const res = await fetch('/laundry/handovers/open');
                 this.openHandovers = await res.json();
@@ -98,11 +109,40 @@
                 if (!this.detailHandoverId) return;
                 const res = await fetch(`/laundry/handovers/${encodeURIComponent(this.detailHandoverId)}`);
                 this.detailData = await res.json();
+                this.detailRows = this.detailData.items || [];
             },
             async loadPending() {
                 if (!this.detailHandoverId) return;
                 const res = await fetch(`/laundry/handovers/${encodeURIComponent(this.detailHandoverId)}/pending-returns`);
                 this.pendingData = await res.json();
+            },
+            async quickReturnRemaining(handoverId) {
+                const res = await fetch(`/laundry/handovers/${encodeURIComponent(handoverId)}/pending-returns`);
+                const pending = await res.json();
+                if (!Array.isArray(pending) || pending.length === 0) {
+                    this.setFeedback('ok', 'No pending quantities to return.');
+                    return;
+                }
+                this.returnForm.handover_id = handoverId;
+                this.returnForm.items = pending.map((row) => ({
+                    item_id: row.item_id,
+                    quantity_returned: Number(row.pending_return_quantity),
+                }));
+                await this.processReturn();
+            },
+            async quickReturnHalf(handoverId) {
+                const res = await fetch(`/laundry/handovers/${encodeURIComponent(handoverId)}/pending-returns`);
+                const pending = await res.json();
+                if (!Array.isArray(pending) || pending.length === 0) {
+                    this.setFeedback('ok', 'No pending quantities to return.');
+                    return;
+                }
+                this.returnForm.handover_id = handoverId;
+                this.returnForm.items = pending.map((row) => ({
+                    item_id: row.item_id,
+                    quantity_returned: Math.max(0.01, Number(row.pending_return_quantity) / 2),
+                }));
+                await this.processReturn();
             },
         },
         mounted() {

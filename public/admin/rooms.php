@@ -23,10 +23,27 @@ ob_start();
             <div><button type="button" @click="resetRoomForm">Reset</button></div>
         </form>
 
+        <div class="form-grid">
+            <label>Search <input type="text" v-model="table.search" placeholder="name/type"></label>
+            <label>Sort
+                <select v-model="table.sortBy">
+                    <option value="name">name</option>
+                    <option value="room_type">room_type</option>
+                    <option value="sort_order">sort_order</option>
+                </select>
+            </label>
+            <label>Direction
+                <select v-model="table.sortDir">
+                    <option value="asc">asc</option>
+                    <option value="desc">desc</option>
+                </select>
+            </label>
+        </div>
+
         <table>
             <thead><tr><th>Name</th><th>Type</th><th>Beds</th><th>Bathrooms</th><th>Actions</th></tr></thead>
             <tbody>
-                <tr v-for="room in rooms" :key="room.id">
+                <tr v-for="room in pagedRooms" :key="room.id">
                     <td>{{ room.name }}</td>
                     <td>{{ room.room_type }}</td>
                     <td>{{ room.beds_json || '-' }}</td>
@@ -36,9 +53,14 @@ ob_start();
                         <button @click="selectRoomForSetup(room)">Setup Beds/Bathrooms</button>
                     </td>
                 </tr>
-                <tr v-if="rooms.length === 0"><td colspan="5">No rooms found.</td></tr>
+                <tr v-if="pagedRooms.length === 0"><td colspan="5">No rooms found.</td></tr>
             </tbody>
         </table>
+        <div class="actions-inline">
+            <button @click="prevPage" :disabled="table.page <= 1">Prev</button>
+            <span>Page {{ table.page }} / {{ totalPages }}</span>
+            <button @click="nextPage" :disabled="table.page >= totalPages">Next</button>
+        </div>
 
         <room-setup-editor
             v-if="selectedRoom"

@@ -119,7 +119,34 @@
                 selectedRoom: null,
                 roomForm: { id: '', name: '', room_type: '', sort_order: 0 },
                 feedback: { type: 'ok', message: '' },
+                table: { search: '', sortBy: 'name', sortDir: 'asc', page: 1, pageSize: 10 },
             };
+        },
+        computed: {
+            displayRooms() {
+                const q = this.table.search.trim().toLowerCase();
+                const dir = this.table.sortDir === 'asc' ? 1 : -1;
+                let list = [...this.rooms];
+                if (q) {
+                    list = list.filter((r) => [r.name, r.room_type, r.beds_json, r.bathrooms_json].join(' ').toLowerCase().includes(q));
+                }
+                list.sort((a, b) => {
+                    const av = String(a[this.table.sortBy] ?? '').toLowerCase();
+                    const bv = String(b[this.table.sortBy] ?? '').toLowerCase();
+                    if (av < bv) return -1 * dir;
+                    if (av > bv) return 1 * dir;
+                    return 0;
+                });
+                return list;
+            },
+            totalPages() {
+                return Math.max(1, Math.ceil(this.displayRooms.length / this.table.pageSize));
+            },
+            pagedRooms() {
+                this.table.page = Math.min(this.table.page, this.totalPages);
+                const start = (this.table.page - 1) * this.table.pageSize;
+                return this.displayRooms.slice(start, start + this.table.pageSize);
+            },
         },
         methods: {
             setFeedback(type, message) { this.feedback = { type, message }; },
@@ -175,6 +202,12 @@
             async onSetupSaved() {
                 await this.loadRooms();
                 this.setFeedback('ok', 'Room bed/bath setup saved.');
+            },
+            nextPage() {
+                this.table.page = Math.min(this.totalPages, this.table.page + 1);
+            },
+            prevPage() {
+                this.table.page = Math.max(1, this.table.page - 1);
             },
         },
         async mounted() {

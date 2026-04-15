@@ -8,6 +8,7 @@ ob_start();
 ?>
 <section class="panel">
     <h3>Create / Edit Property</h3>
+    <p id="property-banner" class="banner" style="display:none"></p>
     <form id="property-form" class="form-grid">
         <input type="hidden" name="id" id="property-id">
         <label>Code <input type="text" name="code" required></label>
@@ -27,28 +28,83 @@ ob_start();
             <button type="button" id="property-reset">Reset</button>
         </div>
     </form>
-    <p id="property-message" class="message"></p>
 </section>
 
 <section class="panel">
     <h3>Property List</h3>
+    <div class="form-grid">
+        <label>Search <input id="property-search" type="text" placeholder="code/name/location"></label>
+        <label>Sort
+            <select id="property-sort">
+                <option value="name">name</option>
+                <option value="code">code</option>
+                <option value="property_type">property_type</option>
+            </select>
+        </label>
+        <label>Direction
+            <select id="property-dir"><option value="asc">asc</option><option value="desc">desc</option></select>
+        </label>
+    </div>
     <table>
         <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Location</th><th>Actions</th></tr></thead>
         <tbody id="properties-table"></tbody>
     </table>
+    <div class="actions-inline">
+        <button id="property-prev">Prev</button>
+        <span id="property-page-meta">Page 1</span>
+        <button id="property-next">Next</button>
+    </div>
 </section>
 
 <script>
 (async function () {
     const form = document.getElementById('property-form');
     const table = document.getElementById('properties-table');
-    const message = document.getElementById('property-message');
     const resetBtn = document.getElementById('property-reset');
+    const banner = document.getElementById('property-banner');
 
-    async function loadProperties() {
-        const res = await fetch('/properties');
-        const data = await res.json();
-        const rows = data.data || [];
+    const searchInput = document.getElementById('property-search');
+    const sortInput = document.getElementById('property-sort');
+    const dirInput = document.getElementById('property-dir');
+    const prevBtn = document.getElementById('property-prev');
+    const nextBtn = document.getElementById('property-next');
+    const pageMeta = document.getElementById('property-page-meta');
+
+    const state = { rows: [], page: 1, pageSize: 10 };
+
+    function showBanner(type, message) {
+        banner.style.display = 'block';
+        banner.className = `banner ${type}`;
+        banner.textContent = message;
+    }
+
+    function computeRows() {
+        const q = searchInput.value.trim().toLowerCase();
+        const sortBy = sortInput.value;
+        const dir = dirInput.value === 'asc' ? 1 : -1;
+
+        let rows = [...state.rows];
+        if (q) {
+            rows = rows.filter((p) => [p.code, p.name, p.location_label].join(' ').toLowerCase().includes(q));
+        }
+
+        rows.sort((a, b) => {
+            const av = String(a[sortBy] ?? '').toLowerCase();
+            const bv = String(b[sortBy] ?? '').toLowerCase();
+            if (av < bv) return -1 * dir;
+            if (av > bv) return 1 * dir;
+            return 0;
+        });
+
+        const totalPages = Math.max(1, Math.ceil(rows.length / state.pageSize));
+        state.page = Math.min(state.page, totalPages);
+        const start = (state.page - 1) * state.pageSize;
+        return { rows: rows.slice(start, start + state.pageSize), totalPages };
+    }
+
+    function renderTable() {
+        const { rows, totalPages } = computeRows();
+
         table.innerHTML = rows.map((p) => `
             <tr>
                 <td>${p.code}</td>
@@ -60,7 +116,11 @@ ob_start();
                     <a href="/admin/rooms.php?property_id=${p.id}">Rooms</a>
                 </td>
             </tr>
-        `).join('');
+        `).join('') || '<tr><td colspan="5">No properties found.</td></tr>';
+
+        pageMeta.textContent = `Page ${state.page} / ${totalPages}`;
+        prevBtn.disabled = state.page <= 1;
+        nextBtn.disabled = state.page >= totalPages;
 
         table.querySelectorAll('button[data-edit]').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -74,6 +134,15 @@ ob_start();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         });
+    }
+
+    async function loadProperties() {
+        showBanner('ok', 'Loading properties...');
+        const res = await fetch('/properties');
+        const data = await res.json();
+        state.rows = data.data || [];
+        renderTable();
+        showBanner('ok', 'Properties loaded.');
     }
 
     form.addEventListener('submit', async (e) => {
@@ -92,19 +161,27 @@ ob_start();
         });
         const data = await res.json();
 
-        message.textContent = res.ok ? 'Saved.' : `Error: ${data.error ?? 'request_failed'}`;
         if (res.ok) {
+            showBanner('ok', 'Property saved successfully.');
             form.reset();
             form.id.value = '';
             await loadProperties();
+        } else {
+            showBanner('error', `Save failed: ${data.error ?? 'request_failed'}`);
         }
     });
 
     resetBtn.addEventListener('click', () => {
         form.reset();
         form.id.value = '';
-        message.textContent = '';
+        banner.style.display = 'none';
     });
+
+    searchInput.addEventListener('input', () => { state.page = 1; renderTable(); });
+    sortInput.addEventListener('change', () => { state.page = 1; renderTable(); });
+    dirInput.addEventListener('change', () => { state.page = 1; renderTable(); });
+    prevBtn.addEventListener('click', () => { state.page = Math.max(1, state.page - 1); renderTable(); });
+    nextBtn.addEventListener('click', () => { state.page += 1; renderTable(); });
 
     await loadProperties();
 })();
