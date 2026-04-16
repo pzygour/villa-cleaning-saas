@@ -47,9 +47,13 @@ ob_start();
     <h3>Balances by Location</h3>
     <div class="form-grid">
         <label>Location ID <input id="location-id" type="text"></label>
+        <label>Item Filter (optional) <input id="balance-item-filter" type="text" placeholder="item id or name"></label>
         <div><button id="load-balances">Load</button></div>
     </div>
-    <pre id="balances-output"></pre>
+    <table>
+        <thead><tr><th>Item</th><th>On Hand</th><th>Reserved</th><th>Available</th></tr></thead>
+        <tbody id="balances-table"></tbody>
+    </table>
 </section>
 
 <section class="panel">
@@ -60,7 +64,10 @@ ob_start();
         <label>To <input id="mv-to" type="date"></label>
         <div><button id="load-movements">Load</button></div>
     </div>
-    <pre id="movements-output"></pre>
+    <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Item</th><th>Qty</th><th>Reference</th><th>Note</th></tr></thead>
+        <tbody id="movements-table"></tbody>
+    </table>
 </section>
 
 <section class="panel">
@@ -70,7 +77,10 @@ ob_start();
         <label>Location ID <input id="av-location-id" type="text"></label>
         <div><button id="load-availability">Load</button></div>
     </div>
-    <pre id="availability-output"></pre>
+    <table>
+        <thead><tr><th>Item</th><th>Needed</th><th>Location Available</th><th>Shortage</th></tr></thead>
+        <tbody id="availability-table"></tbody>
+    </table>
 </section>
 <?php
 $html = (string) ob_get_clean();

@@ -2,12 +2,6 @@
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__, 2) . '/bootstrap.php';
-// Local PSR-4 autoload for App\
-
-var_dump(class_exists(\App\Core\Support\Uuid::class));
-
-
 require_once __DIR__ . '/_layout.php';
 
 ob_start();
@@ -16,17 +10,17 @@ ob_start();
     <article class="panel">
         <h3>Property Operations</h3>
         <p>Manage properties, rooms, bed/bath setup and bookings.</p>
-        <p><a href="properties.php">Go to Properties</a> · <a href="bookings.php">Go to Bookings</a></p>
+        <p><a href="/admin/properties.php">Go to Properties</a> · <a href="/admin/bookings.php">Go to Bookings</a></p>
     </article>
     <article class="panel">
         <h3>Cleaning Operations</h3>
         <p>Use schedule view to assign cleaners and update assignment status.</p>
-        <p><a href="schedule.php">Open Schedule</a></p>
+        <p><a href="/admin/schedule.php">Open Schedule</a></p>
     </article>
     <article class="panel">
         <h3>Stock Visibility</h3>
         <p>View requirement totals, inventory balances, and laundry handovers.</p>
-        <p><a href="requirements.php">Requirements</a> · <a href="inventory.php">Inventory</a> · <a href="laundry.php">Laundry</a></p>
+        <p><a href="/admin/requirements.php">Requirements</a> · <a href="/admin/inventory.php">Inventory</a> · <a href="/admin/laundry.php">Laundry</a></p>
     </article>
 </section>
 <?php

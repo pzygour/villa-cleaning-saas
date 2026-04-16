@@ -55,7 +55,24 @@ ob_start();
         <section class="panel nested">
             <h3>Open Handovers</h3>
             <button @click="loadOpen">Refresh Open Handovers</button>
-            <pre>{{ JSON.stringify(openHandovers, null, 2) }}</pre>
+            <table>
+                <thead><tr><th>ID</th><th>Status</th><th>From</th><th>To</th><th>Date</th><th>Actions</th></tr></thead>
+                <tbody>
+                    <tr v-for="h in openHandovers" :key="h.id" :class="statusClass(h.status)">
+                        <td>{{ h.id }}</td>
+                        <td>{{ h.status }}</td>
+                        <td>{{ h.from_location_name || h.from_location_id }}</td>
+                        <td>{{ h.to_location_name || h.to_location_id }}</td>
+                        <td>{{ h.handover_date }}</td>
+                        <td>
+                            <button @click="openDetail(h.id)">Detail</button>
+                            <button @click="quickReturnRemaining(h.id)">Return Remaining</button>
+                            <button @click="quickReturnHalf(h.id)">Return 50%</button>
+                        </td>
+                    </tr>
+                    <tr v-if="openHandovers.length === 0"><td colspan="6">No open handovers.</td></tr>
+                </tbody>
+            </table>
         </section>
 
         <section class="panel nested">
@@ -65,7 +82,19 @@ ob_start();
                 <div><button @click="loadDetail">Load Detail</button></div>
                 <div><button @click="loadPending">Load Pending</button></div>
             </div>
-            <pre>{{ JSON.stringify(detailData, null, 2) }}</pre>
+            <table>
+                <thead><tr><th>Item</th><th>Sent</th><th>Returned</th><th>Pending</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr v-for="row in detailRows" :key="row.item_id" :class="statusClass(row.status)">
+                        <td>{{ row.item_name || row.item_id }}</td>
+                        <td>{{ row.quantity_sent }}</td>
+                        <td>{{ row.quantity_returned }}</td>
+                        <td>{{ Number(row.quantity_sent) - Number(row.quantity_returned) }}</td>
+                        <td>{{ row.status }}</td>
+                    </tr>
+                    <tr v-if="detailRows.length === 0"><td colspan="5">No detail rows loaded.</td></tr>
+                </tbody>
+            </table>
             <pre>{{ JSON.stringify(pendingData, null, 2) }}</pre>
         </section>
     </div>
