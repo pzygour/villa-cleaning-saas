@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Application\Contracts;
 
-use App\Domain\Cleaning\CleaningEvent;
-use DateTimeImmutable;
-
 interface CleaningEventRepositoryInterface
 {
-    public function saveBatch(array $events): void;
+    public function deleteGeneratedByPropertyAndPeriod(string $propertyId, string $fromDate, string $toDate): void;
 
-    /** @return list<CleaningEvent> */
-    public function between(DateTimeImmutable $from, DateTimeImmutable $to): array;
+    public function createMany(array $events): void;
+
+    public function listByPropertyAndPeriod(string $propertyId, string $fromDate, string $toDate): array;
 }

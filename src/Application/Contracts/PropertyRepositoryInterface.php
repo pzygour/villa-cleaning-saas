@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace App\Application\Contracts;
 
-use App\Domain\Property\Property;
-
 interface PropertyRepositoryInterface
 {
-    public function save(Property $property): void;
+    public function create(array $data): string;
 
-    public function findById(string $id): ?Property;
+    public function update(string $id, array $data): void;
 
-    /** @return list<Property> */
+    public function delete(string $id): void;
+
+    public function findById(string $id): ?array;
+
     public function all(): array;
 }

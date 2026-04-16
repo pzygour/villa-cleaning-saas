@@ -8,7 +8,7 @@ final readonly class CreateBookingDTO
 {
     public function __construct(
         public string $propertyId,
-        public string $reference,
+        public ?string $reference,
         public string $arrivalDate,
         public string $departureDate,
         public int $guestCount,

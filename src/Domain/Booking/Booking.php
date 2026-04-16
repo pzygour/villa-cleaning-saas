@@ -12,7 +12,7 @@ final readonly class Booking
     public function __construct(
         public EntityId $id,
         public EntityId $propertyId,
-        public string $reference,
+        public ?string $reference,
         public DateTimeImmutable $arrivalDate,
         public DateTimeImmutable $departureDate,
         public int $guestCount,
