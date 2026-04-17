@@ -8,20 +8,20 @@ declare(strict_types=1);
 function render_admin_page(string $title, string $contentHtml, array $scripts = []): void
 {
     $nav = [
-        'Dashboard' => '/admin/index.php',
-        'Properties' => '/admin/properties.php',
-        'Bookings' => '/admin/bookings.php',
-        'Schedule' => '/admin/schedule.php',
-        'Requirements' => '/admin/requirements.php',
-        'Inventory' => '/admin/inventory.php',
-        'Laundry' => '/admin/laundry.php',
+        'Dashboard' => 'index.php',
+        'Properties' => 'properties.php',
+        'Bookings' => 'bookings.php',
+        'Schedule' => 'schedule.php',
+        'Requirements' => 'requirements.php',
+        'Inventory' => 'inventory.php',
+        'Laundry' => 'laundry.php',
     ];
 
-    $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/admin/index.php', PHP_URL_PATH) ?: '/admin/index.php';
+    $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? 'index.php', PHP_URL_PATH) ?: 'index.php';
 
     echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">';
     echo '<title>' . htmlspecialchars($title) . ' - Villa Cleaning Admin</title>';
-    echo '<link rel="stylesheet" href="/assets/css/admin.css">';
+    echo '<link rel="stylesheet" href="../assets/css/admin.css">';
     echo '</head><body>';
     echo '<div class="layout">';
     echo '<aside class="sidebar"><h1>Villa Ops</h1><nav><ul>';

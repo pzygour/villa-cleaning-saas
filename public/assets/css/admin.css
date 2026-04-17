@@ -28,6 +28,3 @@ a { color: #0f3fb8; }
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .row-editor { display: grid; grid-template-columns: 1fr 90px auto; gap: 8px; margin-bottom: 6px; }
 .actions-inline { display: flex; gap: 8px; margin-top: 10px; }
-.row-selected { background: #e8f0ff; }
-.row-warning { background: #fff7e6; }
-.row-success { background: #ecfdf3; }
