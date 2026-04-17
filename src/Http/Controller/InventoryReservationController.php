@@ -10,7 +10,7 @@ use App\Application\Services\InventoryReservationService;
 
 final class InventoryReservationController
 {
-    public function __construct(private readonly InventoryReservationService $reservations)
+    public function __construct(private InventoryReservationService $reservations)
     {
     }
 

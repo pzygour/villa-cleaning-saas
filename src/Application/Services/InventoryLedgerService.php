@@ -13,9 +13,9 @@ use App\Core\Exception\DomainException;
 final class InventoryLedgerService
 {
     public function __construct(
-        private readonly InventoryLedgerRepositoryInterface $ledger,
-        private readonly InventoryTransactionValidator $validator,
-        private readonly TransactionManager $transactionManager
+        private InventoryLedgerRepositoryInterface $ledger,
+        private InventoryTransactionValidator $validator,
+        private TransactionManager $transactionManager
     ) {
     }
 

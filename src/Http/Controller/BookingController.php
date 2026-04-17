@@ -10,7 +10,7 @@ use App\Application\Services\BookingService;
 
 final class BookingController
 {
-    public function __construct(private readonly BookingService $service)
+    public function __construct(private BookingService $service)
     {
     }
 

@@ -7,7 +7,7 @@ namespace App\Domain\Booking;
 use App\Domain\Common\EntityId;
 use DateTimeImmutable;
 
-final readonly class Booking
+final class Booking
 {
     public function __construct(
         public EntityId $id,

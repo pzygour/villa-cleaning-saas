@@ -10,7 +10,7 @@ use App\Application\Services\LaundryHandoverService;
 
 final class LaundryHandoverController
 {
-    public function __construct(private readonly LaundryHandoverService $handovers)
+    public function __construct(private LaundryHandoverService $handovers)
     {
     }
 

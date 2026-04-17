@@ -12,8 +12,8 @@ use App\Application\Validators\ItemRuleValidator;
 final class BedTypeItemRuleService
 {
     public function __construct(
-        private readonly BedTypeItemRuleRepositoryInterface $rules,
-        private readonly ItemRuleValidator $validator
+        private BedTypeItemRuleRepositoryInterface $rules,
+        private ItemRuleValidator $validator
     ) {
     }
 

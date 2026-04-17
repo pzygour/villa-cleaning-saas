@@ -8,7 +8,7 @@ use App\Application\Contracts\UserQueryRepositoryInterface;
 
 final class UserQueryService
 {
-    public function __construct(private readonly UserQueryRepositoryInterface $users)
+    public function __construct(private UserQueryRepositoryInterface $users)
     {
     }
 

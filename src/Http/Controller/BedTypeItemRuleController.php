@@ -10,7 +10,7 @@ use App\Application\Services\BedTypeItemRuleService;
 
 final class BedTypeItemRuleController
 {
-    public function __construct(private readonly BedTypeItemRuleService $service)
+    public function __construct(private BedTypeItemRuleService $service)
     {
     }
 

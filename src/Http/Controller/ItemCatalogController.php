@@ -10,7 +10,7 @@ use App\Application\Services\ItemCatalogService;
 
 final class ItemCatalogController
 {
-    public function __construct(private readonly ItemCatalogService $service)
+    public function __construct(private ItemCatalogService $service)
     {
     }
 

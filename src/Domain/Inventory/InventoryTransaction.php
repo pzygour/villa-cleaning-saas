@@ -7,7 +7,7 @@ namespace App\Domain\Inventory;
 use App\Domain\Common\EntityId;
 use DateTimeImmutable;
 
-final readonly class InventoryTransaction
+final class InventoryTransaction
 {
     public function __construct(
         public EntityId $id,

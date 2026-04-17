@@ -10,7 +10,7 @@ use PDO;
 
 final class MySqlInventoryLedgerRepository implements InventoryLedgerRepositoryInterface
 {
-    public function __construct(private readonly PDO $connection)
+    public function __construct(private PDO $connection)
     {
     }
 

@@ -17,12 +17,12 @@ use App\Core\Exception\NotFoundException;
 final class RequirementCalculationService
 {
     public function __construct(
-        private readonly RequirementSourceRepositoryInterface $source,
-        private readonly BedTypeItemRuleRepositoryInterface $bedRules,
-        private readonly BathroomTypeItemRuleRepositoryInterface $bathroomRules,
-        private readonly GuestItemRuleRepositoryInterface $guestRules,
-        private readonly CleaningEventRequirementRepositoryInterface $requirements,
-        private readonly TransactionManager $transactionManager
+        private RequirementSourceRepositoryInterface $source,
+        private BedTypeItemRuleRepositoryInterface $bedRules,
+        private BathroomTypeItemRuleRepositoryInterface $bathroomRules,
+        private GuestItemRuleRepositoryInterface $guestRules,
+        private CleaningEventRequirementRepositoryInterface $requirements,
+        private TransactionManager $transactionManager
     ) {
     }
 

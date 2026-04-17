@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\DTO;
 
-final readonly class CleaningEventRequirementDTO
+final class CleaningEventRequirementDTO
 {
     /**
      * @param array<string,int> $linenItems

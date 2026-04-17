@@ -9,7 +9,7 @@ use PDO;
 
 final class MySqlBathroomTypeRepository implements BathroomTypeRepositoryInterface
 {
-    public function __construct(private readonly PDO $connection)
+    public function __construct(private PDO $connection)
     {
     }
 

@@ -7,7 +7,7 @@ namespace App\Domain\Laundry;
 use App\Domain\Common\EntityId;
 use DateTimeImmutable;
 
-final readonly class LaundryHandover
+final class LaundryHandover
 {
     public function __construct(
         public EntityId $id,

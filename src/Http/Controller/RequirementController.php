@@ -10,7 +10,7 @@ use App\Application\Services\RequirementCalculationService;
 
 final class RequirementController
 {
-    public function __construct(private readonly RequirementCalculationService $service)
+    public function __construct(private RequirementCalculationService $service)
     {
     }
 

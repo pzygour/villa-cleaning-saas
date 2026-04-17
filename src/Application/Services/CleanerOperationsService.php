@@ -6,7 +6,7 @@ namespace App\Application\Services;
 
 final class CleanerOperationsService
 {
-    public function __construct(private readonly CleaningScheduleQueryService $schedule)
+    public function __construct(private CleaningScheduleQueryService $schedule)
     {
     }
 

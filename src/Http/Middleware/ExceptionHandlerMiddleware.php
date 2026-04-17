@@ -9,7 +9,7 @@ use Throwable;
 
 final class ExceptionHandlerMiddleware
 {
-    public function __construct(private readonly LoggerInterface $logger)
+    public function __construct(private LoggerInterface $logger)
     {
     }
 

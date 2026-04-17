@@ -8,7 +8,7 @@ use App\Application\Services\RequirementTotalsQueryService;
 
 final class RequirementTotalsController
 {
-    public function __construct(private readonly RequirementTotalsQueryService $totals)
+    public function __construct(private RequirementTotalsQueryService $totals)
     {
     }
 

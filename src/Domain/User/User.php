@@ -6,7 +6,7 @@ namespace App\Domain\User;
 
 use App\Domain\Common\EntityId;
 
-final readonly class User
+final class User
 {
     public function __construct(
         public EntityId $id,

@@ -11,8 +11,8 @@ use App\Application\Services\CleaningScheduleService;
 final class CleaningScheduleController
 {
     public function __construct(
-        private readonly CleaningScheduleService $service,
-        private readonly CleaningEventRepositoryInterface $events
+        private CleaningScheduleService $service,
+        private CleaningEventRepositoryInterface $events
     ) {
     }
 

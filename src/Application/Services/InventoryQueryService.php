@@ -8,7 +8,7 @@ use App\Application\Contracts\InventoryQueryRepositoryInterface;
 
 final class InventoryQueryService
 {
-    public function __construct(private readonly InventoryQueryRepositoryInterface $query)
+    public function __construct(private InventoryQueryRepositoryInterface $query)
     {
     }
 

@@ -8,7 +8,7 @@ use App\Core\Logging\LoggerInterface;
 
 final class FileLogger implements LoggerInterface
 {
-    public function __construct(private readonly string $filePath)
+    public function __construct(private string $filePath)
     {
     }
 

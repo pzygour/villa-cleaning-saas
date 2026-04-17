@@ -12,8 +12,8 @@ use App\Application\Validators\ItemCatalogValidator;
 final class ItemCatalogService
 {
     public function __construct(
-        private readonly ItemCatalogRepositoryInterface $items,
-        private readonly ItemCatalogValidator $validator
+        private ItemCatalogRepositoryInterface $items,
+        private ItemCatalogValidator $validator
     ) {
     }
 

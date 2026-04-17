@@ -15,10 +15,10 @@ use DateTimeImmutable;
 final class CleaningScheduleService
 {
     public function __construct(
-        private readonly BookingRepositoryInterface $bookings,
-        private readonly CleaningEventRepositoryInterface $events,
-        private readonly PropertyCleaningSettingsRepositoryInterface $settings,
-        private readonly TransactionManager $transactionManager
+        private BookingRepositoryInterface $bookings,
+        private CleaningEventRepositoryInterface $events,
+        private PropertyCleaningSettingsRepositoryInterface $settings,
+        private TransactionManager $transactionManager
     ) {
     }
 

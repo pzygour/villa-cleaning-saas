@@ -12,8 +12,8 @@ use App\Application\Validators\InventoryLocationValidator;
 final class InventoryLocationService
 {
     public function __construct(
-        private readonly InventoryLocationRepositoryInterface $locations,
-        private readonly InventoryLocationValidator $validator
+        private InventoryLocationRepositoryInterface $locations,
+        private InventoryLocationValidator $validator
     ) {
     }
 

@@ -9,7 +9,7 @@ use App\Application\DTO\InventoryMovementDTO;
 
 final class InventoryService
 {
-    public function __construct(private readonly InventoryRepositoryInterface $inventory)
+    public function __construct(private InventoryRepositoryInterface $inventory)
     {
     }
 

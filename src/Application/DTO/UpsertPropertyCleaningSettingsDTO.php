@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\DTO;
 
-final readonly class UpsertPropertyCleaningSettingsDTO
+final class UpsertPropertyCleaningSettingsDTO
 {
     public function __construct(
         public string $propertyId,

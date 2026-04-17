@@ -8,7 +8,7 @@ use App\Application\Services\InventoryQueryService;
 
 final class InventoryQueryController
 {
-    public function __construct(private readonly InventoryQueryService $query)
+    public function __construct(private InventoryQueryService $query)
     {
     }
 

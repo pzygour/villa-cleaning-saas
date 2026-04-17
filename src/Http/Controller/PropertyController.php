@@ -10,7 +10,7 @@ use App\Application\Services\PropertyService;
 
 final class PropertyController
 {
-    public function __construct(private readonly PropertyService $service)
+    public function __construct(private PropertyService $service)
     {
     }
 

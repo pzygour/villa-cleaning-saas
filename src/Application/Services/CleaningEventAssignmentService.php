@@ -13,9 +13,9 @@ use App\Core\Database\TransactionManager;
 final class CleaningEventAssignmentService
 {
     public function __construct(
-        private readonly CleaningEventAssignmentRepositoryInterface $assignments,
-        private readonly CleaningAssignmentValidator $validator,
-        private readonly TransactionManager $transactionManager
+        private CleaningEventAssignmentRepositoryInterface $assignments,
+        private CleaningAssignmentValidator $validator,
+        private TransactionManager $transactionManager
     ) {
     }
 

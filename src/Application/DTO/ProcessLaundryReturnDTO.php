@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\DTO;
 
-final readonly class ProcessLaundryReturnDTO
+final class ProcessLaundryReturnDTO
 {
     /** @param array<int,array{item_id:string,quantity_returned:float}> $items */
     public function __construct(
