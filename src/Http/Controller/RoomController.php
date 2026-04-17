@@ -12,7 +12,7 @@ use App\Application\Services\RoomService;
 
 final class RoomController
 {
-    public function __construct(private readonly RoomService $service)
+    public function __construct(private RoomService $service)
     {
     }
 

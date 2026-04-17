@@ -10,7 +10,7 @@ use App\Application\Services\InventoryLocationService;
 
 final class InventoryLocationController
 {
-    public function __construct(private readonly InventoryLocationService $service)
+    public function __construct(private InventoryLocationService $service)
     {
     }
 

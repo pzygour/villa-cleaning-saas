@@ -7,8 +7,8 @@ namespace App\Http\Response;
 final class HtmlResponse implements ResponseInterface
 {
     public function __construct(
-        private readonly string $body,
-        private readonly int $statusCode = 200
+        private string $body,
+        private int $statusCode = 200
     ) {
     }
 

@@ -9,7 +9,7 @@ use PDO;
 
 final class MySqlBedTypeRepository implements BedTypeRepositoryInterface
 {
-    public function __construct(private readonly PDO $connection)
+    public function __construct(private PDO $connection)
     {
     }
 

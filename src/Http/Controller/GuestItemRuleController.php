@@ -10,7 +10,7 @@ use App\Application\Services\GuestItemRuleService;
 
 final class GuestItemRuleController
 {
-    public function __construct(private readonly GuestItemRuleService $service)
+    public function __construct(private GuestItemRuleService $service)
     {
     }
 

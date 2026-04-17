@@ -12,8 +12,8 @@ use App\Application\Validators\ItemRuleValidator;
 final class GuestItemRuleService
 {
     public function __construct(
-        private readonly GuestItemRuleRepositoryInterface $rules,
-        private readonly ItemRuleValidator $validator
+        private GuestItemRuleRepositoryInterface $rules,
+        private ItemRuleValidator $validator
     ) {
     }
 

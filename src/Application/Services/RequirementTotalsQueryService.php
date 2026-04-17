@@ -8,7 +8,7 @@ use App\Application\Contracts\RequirementTotalsQueryRepositoryInterface;
 
 final class RequirementTotalsQueryService
 {
-    public function __construct(private readonly RequirementTotalsQueryRepositoryInterface $totals)
+    public function __construct(private RequirementTotalsQueryRepositoryInterface $totals)
     {
     }
 

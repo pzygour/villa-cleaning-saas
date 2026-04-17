@@ -14,8 +14,8 @@ use App\Application\Validators\RoomValidator;
 final class RoomService
 {
     public function __construct(
-        private readonly RoomRepositoryInterface $rooms,
-        private readonly RoomValidator $validator
+        private RoomRepositoryInterface $rooms,
+        private RoomValidator $validator
     ) {
     }
 

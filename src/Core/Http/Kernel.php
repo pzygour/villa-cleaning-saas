@@ -91,27 +91,27 @@ use Throwable;
 
 final class Kernel
 {
-    private readonly BookingController $bookingController;
-    private readonly PropertyController $propertyController;
-    private readonly RoomController $roomController;
-    private readonly SetupCatalogController $setupCatalogController;
-    private readonly PropertyCleaningSettingsController $cleaningSettingsController;
-    private readonly CleaningScheduleController $cleaningScheduleController;
-    private readonly ItemCatalogController $itemCatalogController;
-    private readonly BedTypeItemRuleController $bedTypeItemRuleController;
-    private readonly BathroomTypeItemRuleController $bathroomTypeItemRuleController;
-    private readonly GuestItemRuleController $guestItemRuleController;
-    private readonly RequirementController $requirementController;
-    private readonly CleaningAssignmentController $assignmentController;
-    private readonly ScheduleQueryController $scheduleQueryController;
-    private readonly RequirementTotalsController $requirementTotalsController;
-    private readonly InventoryLocationController $inventoryLocationController;
-    private readonly InventoryTransactionController $inventoryTransactionController;
-    private readonly InventoryReservationController $inventoryReservationController;
-    private readonly InventoryQueryController $inventoryQueryController;
-    private readonly LaundryHandoverController $laundryHandoverController;
-    private readonly LaundryQueryController $laundryQueryController;
-    private readonly LoggerInterface $logger;
+    private BookingController $bookingController;
+    private PropertyController $propertyController;
+    private RoomController $roomController;
+    private SetupCatalogController $setupCatalogController;
+    private PropertyCleaningSettingsController $cleaningSettingsController;
+    private CleaningScheduleController $cleaningScheduleController;
+    private ItemCatalogController $itemCatalogController;
+    private BedTypeItemRuleController $bedTypeItemRuleController;
+    private BathroomTypeItemRuleController $bathroomTypeItemRuleController;
+    private GuestItemRuleController $guestItemRuleController;
+    private RequirementController $requirementController;
+    private CleaningAssignmentController $assignmentController;
+    private ScheduleQueryController $scheduleQueryController;
+    private RequirementTotalsController $requirementTotalsController;
+    private InventoryLocationController $inventoryLocationController;
+    private InventoryTransactionController $inventoryTransactionController;
+    private InventoryReservationController $inventoryReservationController;
+    private InventoryQueryController $inventoryQueryController;
+    private LaundryHandoverController $laundryHandoverController;
+    private LaundryQueryController $laundryQueryController;
+    private LoggerInterface $logger;
 
     public function __construct()
     {

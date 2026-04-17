@@ -8,7 +8,7 @@ use App\Application\Contracts\CleaningScheduleQueryRepositoryInterface;
 
 final class CleaningScheduleQueryService
 {
-    public function __construct(private readonly CleaningScheduleQueryRepositoryInterface $schedule)
+    public function __construct(private CleaningScheduleQueryRepositoryInterface $schedule)
     {
     }
 

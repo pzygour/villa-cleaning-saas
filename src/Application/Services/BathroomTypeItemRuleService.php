@@ -12,8 +12,8 @@ use App\Application\Validators\ItemRuleValidator;
 final class BathroomTypeItemRuleService
 {
     public function __construct(
-        private readonly BathroomTypeItemRuleRepositoryInterface $rules,
-        private readonly ItemRuleValidator $validator
+        private BathroomTypeItemRuleRepositoryInterface $rules,
+        private ItemRuleValidator $validator
     ) {
     }
 

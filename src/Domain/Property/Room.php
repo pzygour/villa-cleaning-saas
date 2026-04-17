@@ -6,7 +6,7 @@ namespace App\Domain\Property;
 
 use App\Domain\Common\EntityId;
 
-final readonly class Room
+final class Room
 {
     public function __construct(
         public EntityId $id,

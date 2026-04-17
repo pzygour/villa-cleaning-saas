@@ -8,7 +8,7 @@ use App\Application\Contracts\LaundryQueryRepositoryInterface;
 
 final class LaundryQueryService
 {
-    public function __construct(private readonly LaundryQueryRepositoryInterface $query)
+    public function __construct(private LaundryQueryRepositoryInterface $query)
     {
     }
 

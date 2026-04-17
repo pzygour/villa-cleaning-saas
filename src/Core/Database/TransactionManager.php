@@ -9,7 +9,7 @@ use Throwable;
 
 final class TransactionManager
 {
-    public function __construct(private readonly PDO $connection)
+    public function __construct(private PDO $connection)
     {
     }
 

@@ -9,7 +9,7 @@ use App\Application\Services\PropertyCleaningSettingsService;
 
 final class PropertyCleaningSettingsController
 {
-    public function __construct(private readonly PropertyCleaningSettingsService $service)
+    public function __construct(private PropertyCleaningSettingsService $service)
     {
     }
 

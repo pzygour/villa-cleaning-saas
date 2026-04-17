@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\DTO;
 
-final readonly class CreateInventoryLocationDTO
+final class CreateInventoryLocationDTO
 {
     public function __construct(
         public string $code,

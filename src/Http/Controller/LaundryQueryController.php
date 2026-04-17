@@ -8,7 +8,7 @@ use App\Application\Services\LaundryQueryService;
 
 final class LaundryQueryController
 {
-    public function __construct(private readonly LaundryQueryService $queries)
+    public function __construct(private LaundryQueryService $queries)
     {
     }
 

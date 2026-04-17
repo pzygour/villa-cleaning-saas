@@ -12,9 +12,9 @@ use App\Core\Database\TransactionManager;
 final class InventoryReservationService
 {
     public function __construct(
-        private readonly InventoryReservationRepositoryInterface $requirements,
-        private readonly InventoryLedgerService $ledger,
-        private readonly TransactionManager $transactionManager
+        private InventoryReservationRepositoryInterface $requirements,
+        private InventoryLedgerService $ledger,
+        private TransactionManager $transactionManager
     ) {
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\DTO;
 
-final readonly class CreateBookingDTO
+final class CreateBookingDTO
 {
     public function __construct(
         public string $propertyId,

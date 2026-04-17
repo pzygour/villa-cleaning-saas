@@ -8,7 +8,7 @@ use PDO;
 
 abstract class AbstractPdoRepository
 {
-    public function __construct(protected readonly PDO $connection)
+    public function __construct(protected PDO $connection)
     {
     }
 }

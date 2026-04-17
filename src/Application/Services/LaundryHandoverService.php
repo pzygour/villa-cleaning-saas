@@ -15,10 +15,10 @@ use App\Core\Exception\NotFoundException;
 final class LaundryHandoverService
 {
     public function __construct(
-        private readonly LaundryHandoverRepositoryInterface $handovers,
-        private readonly InventoryLedgerService $inventoryLedger,
-        private readonly LaundryHandoverValidator $validator,
-        private readonly TransactionManager $transactionManager
+        private LaundryHandoverRepositoryInterface $handovers,
+        private InventoryLedgerService $inventoryLedger,
+        private LaundryHandoverValidator $validator,
+        private TransactionManager $transactionManager
     ) {
     }
 

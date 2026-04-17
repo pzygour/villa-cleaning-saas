@@ -10,8 +10,8 @@ use App\Application\Contracts\BedTypeRepositoryInterface;
 final class SetupCatalogController
 {
     public function __construct(
-        private readonly BedTypeRepositoryInterface $bedTypes,
-        private readonly BathroomTypeRepositoryInterface $bathroomTypes
+        private BedTypeRepositoryInterface $bedTypes,
+        private BathroomTypeRepositoryInterface $bathroomTypes
     ) {
     }
 

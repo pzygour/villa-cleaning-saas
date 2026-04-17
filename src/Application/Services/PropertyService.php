@@ -12,8 +12,8 @@ use App\Application\Validators\PropertyValidator;
 final class PropertyService
 {
     public function __construct(
-        private readonly PropertyRepositoryInterface $properties,
-        private readonly PropertyValidator $validator
+        private PropertyRepositoryInterface $properties,
+        private PropertyValidator $validator
     ) {
     }
 

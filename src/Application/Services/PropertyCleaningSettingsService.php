@@ -11,8 +11,8 @@ use App\Application\Validators\CleaningSettingsValidator;
 final class PropertyCleaningSettingsService
 {
     public function __construct(
-        private readonly PropertyCleaningSettingsRepositoryInterface $settings,
-        private readonly CleaningSettingsValidator $validator
+        private PropertyCleaningSettingsRepositoryInterface $settings,
+        private CleaningSettingsValidator $validator
     ) {
     }
 

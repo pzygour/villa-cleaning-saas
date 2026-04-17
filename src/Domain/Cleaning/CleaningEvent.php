@@ -7,7 +7,7 @@ namespace App\Domain\Cleaning;
 use App\Domain\Common\EntityId;
 use DateTimeImmutable;
 
-final readonly class CleaningEvent
+final class CleaningEvent
 {
     public function __construct(
         public EntityId $id,

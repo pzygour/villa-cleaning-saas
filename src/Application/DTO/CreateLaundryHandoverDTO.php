@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\DTO;
 
-final readonly class CreateLaundryHandoverDTO
+final class CreateLaundryHandoverDTO
 {
     /** @param array<int,array{item_id:string,quantity_sent:float}> $items */
     public function __construct(

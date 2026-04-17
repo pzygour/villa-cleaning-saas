@@ -10,7 +10,7 @@ use App\Application\Services\BathroomTypeItemRuleService;
 
 final class BathroomTypeItemRuleController
 {
-    public function __construct(private readonly BathroomTypeItemRuleService $service)
+    public function __construct(private BathroomTypeItemRuleService $service)
     {
     }
 

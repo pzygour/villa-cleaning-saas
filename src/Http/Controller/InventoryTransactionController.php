@@ -9,7 +9,7 @@ use App\Application\Services\InventoryLedgerService;
 
 final class InventoryTransactionController
 {
-    public function __construct(private readonly InventoryLedgerService $ledger)
+    public function __construct(private InventoryLedgerService $ledger)
     {
     }
 

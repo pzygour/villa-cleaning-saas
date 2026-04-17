@@ -10,8 +10,8 @@ use App\Application\Services\CleaningScheduleQueryService;
 final class ScheduleQueryController
 {
     public function __construct(
-        private readonly CleaningScheduleQueryService $schedule,
-        private readonly CleanerOperationsService $cleanerOperations
+        private CleaningScheduleQueryService $schedule,
+        private CleanerOperationsService $cleanerOperations
     ) {
     }
 

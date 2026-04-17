@@ -7,8 +7,8 @@ namespace App\Http\Response;
 final class JsonResponse implements ResponseInterface
 {
     public function __construct(
-        private readonly array $payload,
-        private readonly int $statusCode = 200
+        private array $payload,
+        private int $statusCode = 200
     ) {
     }
 

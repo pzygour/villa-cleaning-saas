@@ -12,8 +12,8 @@ use App\Application\Services\UserQueryService;
 final class CleaningAssignmentController
 {
     public function __construct(
-        private readonly CleaningEventAssignmentService $assignments,
-        private readonly UserQueryService $users
+        private CleaningEventAssignmentService $assignments,
+        private UserQueryService $users
     ) {
     }
 

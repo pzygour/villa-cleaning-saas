@@ -13,8 +13,8 @@ use App\Core\Exception\NotFoundException;
 final class BookingService
 {
     public function __construct(
-        private readonly BookingRepositoryInterface $bookings,
-        private readonly BookingValidator $validator
+        private BookingRepositoryInterface $bookings,
+        private BookingValidator $validator
     ) {
     }
 

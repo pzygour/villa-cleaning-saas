@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\DTO;
 
-final readonly class ReserveEventRequirementsDTO
+final class ReserveEventRequirementsDTO
 {
     public function __construct(
         public string $eventId,
