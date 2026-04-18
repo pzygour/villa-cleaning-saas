@@ -1,0 +1,33 @@
+:root { font-family: Arial, sans-serif; color: #222; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #f5f6f8; }
+.layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.sidebar { background: #1f2937; color: #fff; padding: 16px; }
+.sidebar h1 { margin-top: 0; font-size: 18px; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar li { margin-bottom: 8px; }
+.sidebar a { color: #d1d5db; text-decoration: none; display: block; padding: 8px; border-radius: 4px; }
+.sidebar a.active, .sidebar a:hover { background: #374151; color: #fff; }
+.main { padding: 16px; }
+.panel { background: #fff; border: 1px solid #d9dee7; border-radius: 6px; padding: 12px; margin-bottom: 14px; }
+.panel.nested { background: #fafbff; }
+.panel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; align-items: end; }
+.form-grid label { display: grid; gap: 4px; font-size: 13px; }
+.form-grid .full { grid-column: 1 / -1; }
+input, select, textarea, button { padding: 8px; font: inherit; }
+button { cursor: pointer; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { border: 1px solid #d9dee7; padding: 8px; text-align: left; vertical-align: top; }
+pre { background: #111827; color: #e5e7eb; padding: 10px; border-radius: 6px; overflow: auto; }
+.message { color: #374151; }
+a { color: #0f3fb8; }
+.banner { padding: 8px 10px; border-radius: 4px; margin: 8px 0; }
+.banner.ok { background: #e7f6ec; color: #14532d; border: 1px solid #9ed8af; }
+.banner.error { background: #fdeaea; color: #991b1b; border: 1px solid #efb2b2; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row-editor { display: grid; grid-template-columns: 1fr 90px auto; gap: 8px; margin-bottom: 6px; }
+.actions-inline { display: flex; gap: 8px; margin-top: 10px; }
+.row-selected { background: #e8f0ff; }
+.row-warning { background: #fff7e6; }
+.row-success { background: #ecfdf3; }
