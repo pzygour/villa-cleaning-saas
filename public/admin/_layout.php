@@ -2,6 +2,27 @@
 
 declare(strict_types=1);
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+function require_admin_session(): void
+{
+    if (empty($_SESSION['user_id'])) {
+        header('Location: /login.php');
+        exit;
+    }
+
+    $role = (string) ($_SESSION['user_role'] ?? '');
+    if (!in_array($role, ['owner', 'manager'], true)) {
+        http_response_code(403);
+        echo '<h1>403 Forbidden</h1><p>You do not have access to admin pages.</p>';
+        exit;
+    }
+}
+
+require_admin_session();
+
 /**
  * @param list<string> $scripts
  */
@@ -32,7 +53,7 @@ function render_admin_page(string $title, string $contentHtml, array $scripts = 
     }
 
     echo '</ul></nav></aside>';
-    echo '<main class="main"><header><h2>' . htmlspecialchars($title) . '</h2></header>';
+    echo '<main class="main"><header><h2>' . htmlspecialchars($title) . '</h2><p><a href="/logout.php">Logout</a></p></header>';
     echo $contentHtml;
     echo '</main></div>';
 

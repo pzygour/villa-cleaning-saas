@@ -7,6 +7,7 @@ namespace App\Core\Http;
 use App\Application\Services\BathroomTypeItemRuleService;
 use App\Application\Services\BedTypeItemRuleService;
 use App\Application\Services\BookingService;
+use App\Application\Services\AuthService;
 use App\Application\Services\CleanerOperationsService;
 use App\Application\Services\CleaningEventAssignmentService;
 use App\Application\Services\CleaningScheduleQueryService;
@@ -37,9 +38,11 @@ use App\Application\Validators\PropertyValidator;
 use App\Application\Validators\RoomValidator;
 use App\Core\Database\ConnectionFactory;
 use App\Core\Database\TransactionManager;
+use App\Core\Exception\DomainException;
 use App\Core\Exception\NotFoundException;
 use App\Core\Exception\ValidationException;
 use App\Core\Logging\LoggerInterface;
+use App\Http\Controller\AuthController;
 use App\Http\Controller\BathroomTypeItemRuleController;
 use App\Http\Controller\BedTypeItemRuleController;
 use App\Http\Controller\BookingController;
@@ -61,6 +64,7 @@ use App\Http\Controller\RoomController;
 use App\Http\Controller\ScheduleQueryController;
 use App\Http\Controller\SetupCatalogController;
 use App\Http\Response\HtmlResponse;
+use App\Http\Response\ApiPayload;
 use App\Http\Response\JsonResponse;
 use App\Http\Response\ResponseInterface;
 use App\Infrastructure\Logging\FileLogger;
@@ -86,6 +90,7 @@ use App\Infrastructure\Persistence\MySql\Repository\MySqlPropertyRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlRequirementSourceRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlRequirementTotalsQueryRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlRoomRepository;
+use App\Infrastructure\Persistence\MySql\Repository\MySqlUserAuthRepository;
 use App\Infrastructure\Persistence\MySql\Repository\MySqlUserQueryRepository;
 use Throwable;
 
@@ -111,6 +116,7 @@ final class Kernel
     private InventoryQueryController $inventoryQueryController;
     private LaundryHandoverController $laundryHandoverController;
     private LaundryQueryController $laundryQueryController;
+    private AuthController $authController;
     private LoggerInterface $logger;
 
     public function __construct()
@@ -137,6 +143,7 @@ final class Kernel
         $scheduleQueryRepository = new MySqlCleaningScheduleQueryRepository($db);
         $requirementTotalsRepository = new MySqlRequirementTotalsQueryRepository($db);
         $userQueryRepository = new MySqlUserQueryRepository($db);
+        $userAuthRepository = new MySqlUserAuthRepository($db);
 
         $inventoryLocationRepository = new MySqlInventoryLocationRepository($db);
         $inventoryLedgerRepository = new MySqlInventoryLedgerRepository($db);
@@ -194,11 +201,14 @@ final class Kernel
             new LaundryHandoverService($laundryHandoverRepository, $inventoryLedgerService, new LaundryHandoverValidator(), $transactionManager)
         );
         $this->laundryQueryController = new LaundryQueryController(new LaundryQueryService($laundryQueryRepository));
+        $this->authController = new AuthController(new AuthService($userAuthRepository));
     }
 
     public function handle(array $server): ResponseInterface
     {
         try {
+            $this->startSessionIfNeeded();
+
             $method = strtoupper((string) ($server['REQUEST_METHOD'] ?? 'GET'));
             $path = parse_url((string) ($server['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
             $payload = $this->jsonBody();
@@ -206,6 +216,30 @@ final class Kernel
 
             if ($path === '/') {
                 return new HtmlResponse('<h1>Milestone 5 backend is running.</h1>');
+            }
+
+            if ($method === 'POST' && $path === '/auth/login') {
+                try {
+                    return new JsonResponse(ApiPayload::success($this->authController->login($payload), 'Login successful'));
+                } catch (DomainException $exception) {
+                    return $this->authErrorResponse(401, 'unauthorized', $exception->getMessage());
+                }
+            }
+            if ($method === 'POST' && $path === '/auth/logout') {
+                return new JsonResponse(ApiPayload::success($this->authController->logout(), 'Logout successful'));
+            }
+            if ($method === 'GET' && $path === '/auth/me') {
+                $user = $this->currentUser();
+                if ($user === null) {
+                    return $this->authErrorResponse(401, 'unauthorized', 'Authentication required');
+                }
+
+                return new JsonResponse(ApiPayload::success($user));
+            }
+
+            $authz = $this->authorizeApiRequest($method, $path);
+            if ($authz !== null) {
+                return $authz;
             }
 
             return $this->route($method, $path, $query, $payload);
@@ -469,5 +503,81 @@ final class Kernel
         $decoded = json_decode($content, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private function startSessionIfNeeded(): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+    }
+
+    private function currentUser(): ?array
+    {
+        return $this->authController->currentUser();
+    }
+
+    private function authorizeApiRequest(string $method, string $path): ?ResponseInterface
+    {
+        $user = $this->currentUser();
+        if ($user === null) {
+            return $this->authErrorResponse(401, 'unauthorized', 'Authentication required');
+        }
+
+        $role = (string) ($user['role'] ?? '');
+        if ($role === 'owner') {
+            return null;
+        }
+
+        if ($role === 'manager') {
+            if ($this->isOwnerOnlyRoute($method, $path)) {
+                return $this->authErrorResponse(403, 'forbidden', 'Insufficient privileges');
+            }
+
+            return null;
+        }
+
+        if ($role === 'cleaner') {
+            $cleanerId = (string) ($user['id'] ?? '');
+            if ($this->canCleanerAccess($method, $path, $cleanerId)) {
+                return null;
+            }
+
+            return $this->authErrorResponse(403, 'forbidden', 'Cleaner role cannot access this endpoint');
+        }
+
+        return $this->authErrorResponse(403, 'forbidden', 'Role is not allowed');
+    }
+
+    private function isOwnerOnlyRoute(string $method, string $path): bool
+    {
+        // Reserved for future owner-only actions.
+        return false;
+    }
+
+    private function canCleanerAccess(string $method, string $path, string $cleanerId): bool
+    {
+        if ($method === 'GET' && preg_match('#^/schedule/cleaner/([a-f0-9\-]+)$#', $path, $matches) === 1) {
+            return $matches[1] === $cleanerId;
+        }
+
+        if ($method === 'GET' && preg_match('#^/cleaners/([a-f0-9\-]+)/operations$#', $path, $matches) === 1) {
+            return $matches[1] === $cleanerId;
+        }
+
+        if ($method === 'PATCH' && preg_match('#^/cleaning-events/([a-f0-9\-]+)/assignments/([a-f0-9\-]+)/status$#', $path, $matches) === 1) {
+            return $matches[2] === $cleanerId;
+        }
+
+        return false;
+    }
+
+    private function authErrorResponse(int $statusCode, string $error, string $message): JsonResponse
+    {
+        return new JsonResponse([
+            'success' => false,
+            'error' => $error,
+            'message' => $message,
+        ], $statusCode);
     }
 }
