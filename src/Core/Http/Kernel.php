@@ -42,7 +42,6 @@ use App\Core\Exception\DomainException;
 use App\Core\Exception\NotFoundException;
 use App\Core\Exception\ValidationException;
 use App\Core\Logging\LoggerInterface;
-use App\Http\Controller\AuthController;
 use App\Http\Controller\BathroomTypeItemRuleController;
 use App\Http\Controller\BedTypeItemRuleController;
 use App\Http\Controller\BookingController;
@@ -116,7 +115,7 @@ final class Kernel
     private InventoryQueryController $inventoryQueryController;
     private LaundryHandoverController $laundryHandoverController;
     private LaundryQueryController $laundryQueryController;
-    private AuthController $authController;
+    private AuthService $authService;
     private LoggerInterface $logger;
 
     public function __construct()
@@ -201,7 +200,7 @@ final class Kernel
             new LaundryHandoverService($laundryHandoverRepository, $inventoryLedgerService, new LaundryHandoverValidator(), $transactionManager)
         );
         $this->laundryQueryController = new LaundryQueryController(new LaundryQueryService($laundryQueryRepository));
-        $this->authController = new AuthController(new AuthService($userAuthRepository));
+        $this->authService = new AuthService($userAuthRepository);
     }
 
     public function handle(array $server): ResponseInterface
@@ -218,23 +217,8 @@ final class Kernel
                 return new HtmlResponse('<h1>Milestone 5 backend is running.</h1>');
             }
 
-            if ($method === 'POST' && $path === '/auth/login') {
-                try {
-                    return new JsonResponse(ApiPayload::success($this->authController->login($payload), 'Login successful'));
-                } catch (DomainException $exception) {
-                    return $this->authErrorResponse(401, 'unauthorized', $exception->getMessage());
-                }
-            }
-            if ($method === 'POST' && $path === '/auth/logout') {
-                return new JsonResponse(ApiPayload::success($this->authController->logout(), 'Logout successful'));
-            }
-            if ($method === 'GET' && $path === '/auth/me') {
-                $user = $this->currentUser();
-                if ($user === null) {
-                    return $this->authErrorResponse(401, 'unauthorized', 'Authentication required');
-                }
-
-                return new JsonResponse(ApiPayload::success($user));
+            if ($this->isPublicRoute($method, $path)) {
+                return $this->publicRoute($method, $path, $payload);
             }
 
             $authz = $this->authorizeApiRequest($method, $path);
@@ -244,12 +228,12 @@ final class Kernel
 
             return $this->route($method, $path, $query, $payload);
         } catch (ValidationException $exception) {
-            return new JsonResponse(['error' => 'validation_error', 'details' => $exception->errors()], 422);
+            return new JsonResponse(ApiPayload::error('validation_error', 'Validation failed', $exception->errors()), 422);
         } catch (NotFoundException $exception) {
-            return new JsonResponse(['error' => 'not_found', 'message' => $exception->getMessage()], 404);
+            return new JsonResponse(ApiPayload::error('not_found', $exception->getMessage()), 404);
         } catch (Throwable $throwable) {
             $this->logger->error('Unhandled exception', ['message' => $throwable->getMessage()]);
-            return new JsonResponse(['error' => 'server_error'], 500);
+            return new JsonResponse(ApiPayload::error('server_error', 'Unexpected server error'), 500);
         }
     }
 
@@ -490,7 +474,7 @@ final class Kernel
             return new JsonResponse($this->laundryQueryController->handoverDetail($matches[1]));
         }
 
-        return new JsonResponse(['error' => 'not_found'], 404);
+        return new JsonResponse(ApiPayload::error('not_found', 'Route not found'), 404);
     }
 
     private function jsonBody(): array
@@ -514,7 +498,54 @@ final class Kernel
 
     private function currentUser(): ?array
     {
-        return $this->authController->currentUser();
+        $id = (string) ($_SESSION['user_id'] ?? '');
+        if ($id === '') {
+            return null;
+        }
+
+        return $this->authService->currentUser($id);
+    }
+
+    private function isPublicRoute(string $method, string $path): bool
+    {
+        return ($method === 'POST' && in_array($path, ['/auth/login', '/auth/logout'], true))
+            || ($method === 'GET' && $path === '/auth/me');
+    }
+
+    private function publicRoute(string $method, string $path, array $payload): ResponseInterface
+    {
+        if ($method === 'POST' && $path === '/auth/login') {
+            try {
+                $user = $this->authService->login((string) ($payload['email'] ?? ''), (string) ($payload['password'] ?? ''));
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_role'] = $user['role'];
+                $_SESSION['user_name'] = $user['name'];
+
+                return new JsonResponse(ApiPayload::success($user, 'Login successful'));
+            } catch (DomainException $exception) {
+                return $this->authErrorResponse(401, 'unauthorized', $exception->getMessage());
+            }
+        }
+
+        if ($method === 'POST' && $path === '/auth/logout') {
+            $_SESSION = [];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_destroy();
+            }
+
+            return new JsonResponse(ApiPayload::success(['logged_out' => true], 'Logout successful'));
+        }
+
+        if ($method === 'GET' && $path === '/auth/me') {
+            $user = $this->currentUser();
+            if ($user === null) {
+                return $this->authErrorResponse(401, 'unauthorized', 'Authentication required');
+            }
+
+            return new JsonResponse(ApiPayload::success($user));
+        }
+
+        return new JsonResponse(ApiPayload::error('not_found', 'Route not found'), 404);
     }
 
     private function authorizeApiRequest(string $method, string $path): ?ResponseInterface
@@ -551,7 +582,8 @@ final class Kernel
 
     private function isOwnerOnlyRoute(string $method, string $path): bool
     {
-        // Reserved for future owner-only actions.
+        // Current MVP has no owner-only routes yet; keep explicit hook for future additions.
+        // Example future policy: return $method === 'DELETE' && str_starts_with($path, '/users/');
         return false;
     }
 
@@ -574,10 +606,6 @@ final class Kernel
 
     private function authErrorResponse(int $statusCode, string $error, string $message): JsonResponse
     {
-        return new JsonResponse([
-            'success' => false,
-            'error' => $error,
-            'message' => $message,
-        ], $statusCode);
+        return new JsonResponse(ApiPayload::error($error, $message), $statusCode);
     }
 }

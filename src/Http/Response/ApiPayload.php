@@ -16,10 +16,11 @@ final class ApiPayload
         ];
     }
 
-    public static function error(string $message, array $errors = []): array
+    public static function error(string $error, string $message, array $errors = []): array
     {
         return [
             'success' => false,
+            'error' => $error,
             'data' => null,
             'message' => $message,
             'errors' => $errors,
