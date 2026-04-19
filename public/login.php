@@ -6,8 +6,19 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
+function base_path_for_public(): string
+{
+    $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'));
+    $base = rtrim((string) dirname($script), '/');
+
+    return $base === '/' ? '' : $base;
+}
+
+$basePath = base_path_for_public();
+$appUrl = static fn (string $path): string => $basePath . '/' . ltrim($path, '/');
+
 if (!empty($_SESSION['user_id'])) {
-    header('Location: /admin/index.php');
+    header('Location: ' . $appUrl('/admin/index.php'));
     exit;
 }
 ?>
@@ -17,7 +28,7 @@ if (!empty($_SESSION['user_id'])) {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login - Villa Cleaning</title>
-    <link rel="stylesheet" href="/assets/css/admin.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars($appUrl('/assets/css/admin.css')) ?>">
 </head>
 <body>
 <div class="layout" style="max-width:520px;margin:32px auto;display:block;">
@@ -40,7 +51,8 @@ form.addEventListener('submit', async (event) => {
     message.textContent = 'Signing in...';
 
     const payload = Object.fromEntries(new FormData(form).entries());
-    const response = await fetch('/auth/login', {
+    const basePath = <?= json_encode($basePath, JSON_THROW_ON_ERROR) ?>;
+    const response = await fetch(`${basePath}/auth/login`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload)
@@ -53,7 +65,7 @@ form.addEventListener('submit', async (event) => {
         return;
     }
 
-    window.location.href = '/admin/index.php';
+    window.location.href = `${basePath}/admin/index.php`;
 });
 </script>
 </body>

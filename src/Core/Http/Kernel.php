@@ -117,6 +117,7 @@ final class Kernel
     private LaundryQueryController $laundryQueryController;
     private AuthService $authService;
     private LoggerInterface $logger;
+    private string $basePath = '';
 
     public function __construct()
     {
@@ -205,11 +206,12 @@ final class Kernel
 
     public function handle(array $server): ResponseInterface
     {
+        $method = strtoupper((string) ($server['REQUEST_METHOD'] ?? 'GET'));
+        $path = $this->normalizePath($server);
+        $requestContext = $this->requestContext($method, $path);
+
         try {
             $this->startSessionIfNeeded();
-
-            $method = strtoupper((string) ($server['REQUEST_METHOD'] ?? 'GET'));
-            $path = parse_url((string) ($server['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
             $payload = $this->jsonBody();
             $query = $_GET;
 
@@ -228,11 +230,13 @@ final class Kernel
 
             return $this->route($method, $path, $query, $payload);
         } catch (ValidationException $exception) {
+            $this->logger->error('Validation exception', $requestContext + ['errors' => $exception->errors()]);
             return new JsonResponse(ApiPayload::error('validation_error', 'Validation failed', $exception->errors()), 422);
         } catch (NotFoundException $exception) {
+            $this->logger->error('Not found exception', $requestContext + ['message' => $exception->getMessage()]);
             return new JsonResponse(ApiPayload::error('not_found', $exception->getMessage()), 404);
         } catch (Throwable $throwable) {
-            $this->logger->error('Unhandled exception', ['message' => $throwable->getMessage()]);
+            $this->logger->error('Unhandled exception', $requestContext + ['message' => $throwable->getMessage()]);
             return new JsonResponse(ApiPayload::error('server_error', 'Unexpected server error'), 500);
         }
     }
@@ -607,5 +611,44 @@ final class Kernel
     private function authErrorResponse(int $statusCode, string $error, string $message): JsonResponse
     {
         return new JsonResponse(ApiPayload::error($error, $message), $statusCode);
+    }
+
+    private function normalizePath(array $server): string
+    {
+        $rawPath = parse_url((string) ($server['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+        $scriptName = str_replace('\\', '/', (string) ($server['SCRIPT_NAME'] ?? '/index.php'));
+        $scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+
+        $this->basePath = $scriptDir === '/' ? '' : $scriptDir;
+
+        $path = $rawPath;
+        if ($this->basePath !== '' && str_starts_with($path, $this->basePath)) {
+            $path = substr($path, strlen($this->basePath));
+            $path = $path === false ? '/' : $path;
+        }
+
+        if (str_starts_with($path, '/index.php')) {
+            $path = substr($path, strlen('/index.php'));
+            $path = $path === false ? '/' : $path;
+        }
+
+        $path = '/' . ltrim($path, '/');
+
+        return $path === '/index.php' || $path === '//' ? '/' : $path;
+    }
+
+    private function requestContext(string $method, string $path): array
+    {
+        $sessionUserId = '';
+        if (isset($_SESSION) && is_array($_SESSION)) {
+            $sessionUserId = (string) ($_SESSION['user_id'] ?? '');
+        }
+
+        return [
+            'method' => $method,
+            'path' => $path,
+            'base_path' => $this->basePath,
+            'user_id' => $sessionUserId,
+        ];
     }
 }

@@ -1,5 +1,6 @@
 (function () {
     const { createApp } = Vue;
+    const apiUrl = (path) => (typeof window.apiUrl === 'function' ? window.apiUrl(path) : path);
 
     createApp({
         components: {
@@ -48,13 +49,13 @@
                 try {
                     let res;
                     if (this.filters.view === 'day') {
-                        res = await fetch(`/schedule/day?date=${encodeURIComponent(this.filters.date)}`);
+                        res = await fetch(apiUrl(`/schedule/day?date=${encodeURIComponent(this.filters.date)}`));
                     } else if (this.filters.cleaner_id) {
-                        res = await fetch(`/schedule/cleaner/${encodeURIComponent(this.filters.cleaner_id)}?${this.buildRangeQuery()}`);
+                        res = await fetch(apiUrl(`/schedule/cleaner/${encodeURIComponent(this.filters.cleaner_id)}?${this.buildRangeQuery()}`));
                     } else if (this.filters.property_id) {
-                        res = await fetch(`/schedule/property/${encodeURIComponent(this.filters.property_id)}?${this.buildRangeQuery()}`);
+                        res = await fetch(apiUrl(`/schedule/property/${encodeURIComponent(this.filters.property_id)}?${this.buildRangeQuery()}`));
                     } else {
-                        res = await fetch(`/schedule/all?${this.buildRangeQuery()}`);
+                        res = await fetch(apiUrl(`/schedule/all?${this.buildRangeQuery()}`));
                     }
 
                     this.rows = await res.json();
@@ -75,7 +76,7 @@
                     return;
                 }
 
-                const res = await fetch(`/requirements/totals/events?event_ids=${encodeURIComponent(eventIds.join(','))}`);
+                const res = await fetch(apiUrl(`/requirements/totals/events?event_ids=${encodeURIComponent(eventIds.join(','))}`));
                 const totals = await res.json();
                 const map = {};
                 for (const row of totals) {
@@ -96,7 +97,7 @@
                     return;
                 }
 
-                const res = await fetch(`/requirements/totals/events?event_ids=${encodeURIComponent(this.selectedEventId)}`);
+                const res = await fetch(apiUrl(`/requirements/totals/events?event_ids=${encodeURIComponent(this.selectedEventId)}`));
                 this.requirementTotals = await res.json();
             },
         },
