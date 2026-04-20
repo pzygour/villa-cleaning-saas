@@ -7,44 +7,46 @@ require_once __DIR__ . '/_layout.php';
 ob_start();
 ?>
 <section class="panel">
-    <h3>Requirement Totals by Event IDs</h3>
-    <div class="form-grid">
-        <label class="full">Event IDs (comma separated)<input id="event-ids" type="text"></label>
-        <div><button id="load-event-totals">Load</button></div>
-    </div>
-    <pre id="event-totals-output"></pre>
+    <h3>Requirements Workspace</h3>
+    <p id="requirements-banner" class="banner" style="display:none"></p>
 </section>
 
 <section class="panel">
-    <h3>Requirement Totals by Day</h3>
+    <h3>Event-level Requirement Totals</h3>
     <div class="form-grid">
-        <label>Date <input id="day-date" type="date"></label>
-        <label>Property ID (optional) <input id="day-property-id" type="text"></label>
-        <div><button id="load-day-totals">Load</button></div>
+        <label class="full">Event IDs (comma separated)<input id="event-ids" type="text" placeholder="event-1,event-2"></label>
+        <div><button id="load-event-totals">Load</button></div>
     </div>
-    <pre id="day-totals-output"></pre>
+    <div id="event-totals-output"></div>
 </section>
 
-<script>
-(function() {
-    document.getElementById('load-event-totals').addEventListener('click', async () => {
-        const ids = document.getElementById('event-ids').value;
-        const res = await fetch(`/requirements/totals/events?event_ids=${encodeURIComponent(ids)}`);
-        const data = await res.json();
-        document.getElementById('event-totals-output').textContent = JSON.stringify(data, null, 2);
-    });
+<section class="panel">
+    <h3>Day Requirement Totals</h3>
+    <div class="form-grid">
+        <label>Date <input id="day-date" type="date"></label>
+        <label>Property (optional)
+            <select id="day-property-id"><option value="">-- all properties --</option></select>
+        </label>
+        <div><button id="load-day-totals">Load</button></div>
+    </div>
+    <div id="day-totals-output"></div>
+</section>
 
-    document.getElementById('load-day-totals').addEventListener('click', async () => {
-        const date = document.getElementById('day-date').value;
-        const propertyId = document.getElementById('day-property-id').value;
-        const q = new URLSearchParams({ date });
-        if (propertyId) q.set('property_id', propertyId);
-        const res = await fetch(`/requirements/totals/day?${q.toString()}`);
-        const data = await res.json();
-        document.getElementById('day-totals-output').textContent = JSON.stringify(data, null, 2);
-    });
-})();
-</script>
+<section class="panel">
+    <h3>Property Date-Range Requirement Totals</h3>
+    <div class="form-grid">
+        <label>Property
+            <select id="range-property-id"><option value="">-- select property --</option></select>
+        </label>
+        <label>From <input id="range-from-date" type="date"></label>
+        <label>To <input id="range-to-date" type="date"></label>
+        <div><button id="load-range-totals">Load</button></div>
+    </div>
+    <div id="range-totals-output"></div>
+</section>
 <?php
 $html = (string) ob_get_clean();
-render_admin_page('Requirements', $html);
+render_admin_page('Requirements', $html, [
+    '/assets/js/components/requirement-drilldown.js',
+    '/assets/js/components/requirements-operations.js',
+]);
