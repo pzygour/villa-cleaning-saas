@@ -47,7 +47,7 @@ ob_start();
             </div>
             <div class="actions-inline">
                 <button @click="addCreateItem">Add Item Row</button>
-                <button :disabled="loading.create" @click="createHandover">{{ loading.create ? 'Creating...' : 'Create Handover' }}</button>
+                <button :disabled="loading.create" @click="createHandover($event)">{{ loading.create ? 'Submitting...' : 'Create Handover' }}</button>
             </div>
         </section>
 
@@ -55,7 +55,7 @@ ob_start();
             <h3>Process Partial Return</h3>
             <div class="form-grid">
                 <label>Handover ID <input type="text" v-model="returnForm.handover_id"></label>
-                <div><button @click="loadPendingForReturn">Load Pending</button></div>
+                <div><button :disabled="loading.pending" @click="loadPendingForReturn($event)">{{ loading.pending ? 'Loading...' : 'Load Pending' }}</button></div>
                 <label>Created By User ID <input type="text" v-model="returnForm.created_by_user_id"></label>
                 <label class="full">Note <input type="text" v-model="returnForm.note"></label>
             </div>
@@ -68,7 +68,7 @@ ob_start();
             </div>
             <div class="actions-inline">
                 <button @click="addReturnItem">Add Return Row</button>
-                <button :disabled="loading.return" @click="processReturn">{{ loading.return ? 'Submitting...' : 'Submit Return' }}</button>
+                <button :disabled="loading.return" @click="processReturn($event)">{{ loading.return ? 'Submitting...' : 'Submit Return' }}</button>
             </div>
         </section>
 
@@ -87,7 +87,7 @@ ob_start();
                         <td>{{ h.handover_date }}</td>
                         <td>
                             <button @click="openDetail(h.id)">Detail</button>
-                            <button @click="quickReturnRemaining(h.id)">Return Remaining</button>
+                            <button :disabled="loading.quickReturnId === h.id" @click="quickReturnRemaining(h.id, $event)">{{ loading.quickReturnId === h.id ? 'Submitting...' : 'Return Remaining' }}</button>
                         </td>
                     </tr>
                     <tr v-if="openHandovers.length === 0"><td colspan="7">No open handovers.</td></tr>
@@ -144,6 +144,6 @@ ob_start();
 $html = (string) ob_get_clean();
 render_admin_page('Laundry', $html, [
     'https://unpkg.com/vue@3/dist/vue.global.prod.js',
-    '/assets/js/components/laundry-ui-utils.js',
+    '/assets/js/components/admin-request.js',
     '/assets/js/components/laundry-operations.js',
 ]);

@@ -1,6 +1,6 @@
 (function () {
     const { createApp } = Vue;
-    const ui = window.LaundryUi;
+    const request = window.AdminRequest;
 
     createApp({
         data() {
@@ -13,6 +13,7 @@
                     open: false,
                     detail: false,
                     pending: false,
+                    quickReturnId: null,
                 },
                 properties: [],
                 locations: [],
@@ -40,8 +41,11 @@
             };
         },
         methods: {
-            setFeedback(type, message) {
-                this.feedback = { type, message };
+            showOk(message) {
+                this.feedback = { type: 'ok', message };
+            },
+            showError(message) {
+                this.feedback = { type: 'error', message };
             },
             normalizeDate(value) {
                 if (!value) return null;
@@ -66,24 +70,42 @@
                 this.returnForm.items.splice(index, 1);
                 if (this.returnForm.items.length === 0) this.addReturnItem();
             },
-            async bootstrapOptions() {
-                this.loading.bootstrap = true;
+            async api(path, options = {}) {
                 try {
-                    const [properties, locations, items] = await Promise.all([
-                        ui.requestJson('/properties'),
-                        ui.requestJson('/inventory/locations'),
-                        ui.requestJson('/items'),
-                    ]);
-                    this.properties = Array.isArray(properties) ? properties : [];
-                    this.locations = Array.isArray(locations) ? locations : [];
-                    this.items = Array.isArray(items) ? items : [];
-                } finally {
-                    this.loading.bootstrap = false;
+                    return await request.request(path, options);
+                } catch (err) {
+                    return {
+                        ok: false,
+                        data: null,
+                        error: err?.message || 'request_failed',
+                    };
                 }
             },
-            async createHandover() {
+            async bootstrapOptions() {
+                this.loading.bootstrap = true;
+
+                const [properties, locations, items] = await Promise.all([
+                    this.api('/properties'),
+                    this.api('/inventory/locations'),
+                    this.api('/items'),
+                ]);
+
+                this.loading.bootstrap = false;
+
+                if (!properties.ok || !locations.ok || !items.ok) {
+                    this.showError('Failed to load laundry setup options.');
+                    return;
+                }
+
+                this.properties = Array.isArray(properties.data) ? properties.data : [];
+                this.locations = Array.isArray(locations.data) ? locations.data : [];
+                this.items = Array.isArray(items.data) ? items.data : [];
+            },
+            async createHandover(event) {
+                const button = event?.currentTarget || null;
                 this.loading.create = true;
-                try {
+
+                await request.withButtonLoading(button, 'Submitting...', async () => {
                     const payload = {
                         property_id: this.createForm.property_id || null,
                         from_location_id: this.createForm.from_location_id,
@@ -96,36 +118,43 @@
                             .map((x) => ({ item_id: x.item_id, quantity_sent: Number(x.quantity_sent) })),
                     };
 
-                    const data = await ui.requestJson('/laundry/handovers', {
+                    const result = await this.api('/laundry/handovers', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload),
                     });
 
-                    this.setFeedback('ok', `Laundry handover created: ${data.handover_id || data.id || '-'}`);
+                    if (!result.ok) {
+                        this.showError(`Create handover failed: ${result.error}`);
+                        return;
+                    }
+
+                    const handoverId = result.data?.handover_id || result.data?.id || '';
+                    this.showOk(`Laundry handover created: ${handoverId || '-'}`);
                     this.createForm.note = '';
                     this.createForm.items = [{ item_id: '', quantity_sent: 1 }];
-                    this.detailHandoverId = data.handover_id || this.detailHandoverId;
+                    this.detailHandoverId = handoverId || this.detailHandoverId;
                     this.returnForm.handover_id = this.detailHandoverId;
+
                     await this.loadOpen();
                     if (this.detailHandoverId) {
                         await this.loadDetail();
                         await this.loadPending();
                     }
-                } catch (err) {
-                    this.setFeedback('error', `Create handover failed: ${err.message || 'request_failed'}`);
-                } finally {
-                    this.loading.create = false;
-                }
+                });
+
+                this.loading.create = false;
             },
-            async processReturn() {
+            async processReturn(event) {
                 if (!this.returnForm.handover_id) {
-                    this.setFeedback('error', 'Provide handover ID before submitting return.');
+                    this.showError('Provide handover ID before submitting return.');
                     return;
                 }
 
+                const button = event?.currentTarget || null;
                 this.loading.return = true;
-                try {
+
+                await request.withButtonLoading(button, 'Submitting...', async () => {
                     const payload = {
                         created_by_user_id: this.returnForm.created_by_user_id || null,
                         note: this.returnForm.note || null,
@@ -134,73 +163,81 @@
                             .map((x) => ({ item_id: x.item_id, quantity_returned: Number(x.quantity_returned) })),
                     };
 
-                    const data = await ui.requestJson(`/laundry/handovers/${encodeURIComponent(this.returnForm.handover_id)}/returns`, {
+                    const result = await this.api(`/laundry/handovers/${encodeURIComponent(this.returnForm.handover_id)}/returns`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload),
                     });
 
-                    this.setFeedback('ok', `Return processed. Handover status: ${data.status || 'updated'}`);
+                    if (!result.ok) {
+                        this.showError(`Return failed: ${result.error}`);
+                        return;
+                    }
+
+                    this.showOk(`Return processed. Handover status: ${result.data?.status || 'updated'}`);
                     this.detailHandoverId = this.returnForm.handover_id;
                     await this.loadOpen();
                     await this.loadDetail();
                     await this.loadPending();
-                } catch (err) {
-                    this.setFeedback('error', `Return failed: ${err.message || 'request_failed'}`);
-                } finally {
-                    this.loading.return = false;
-                }
+                });
+
+                this.loading.return = false;
             },
             async loadOpen() {
                 this.loading.open = true;
-                try {
-                    const rows = await ui.requestJson('/laundry/handovers/open');
-                    this.openHandovers = Array.isArray(rows) ? rows : [];
-                } catch (err) {
-                    this.setFeedback('error', `Load open handovers failed: ${err.message || 'request_failed'}`);
-                } finally {
-                    this.loading.open = false;
+                const result = await this.api('/laundry/handovers/open');
+                this.loading.open = false;
+
+                if (!result.ok) {
+                    this.showError(`Load open handovers failed: ${result.error}`);
+                    return;
                 }
+
+                this.openHandovers = Array.isArray(result.data) ? result.data : [];
             },
             async loadDetail() {
                 if (!this.detailHandoverId) return;
 
                 this.loading.detail = true;
-                try {
-                    const detail = await ui.requestJson(`/laundry/handovers/${encodeURIComponent(this.detailHandoverId)}`);
-                    this.detailData = detail || null;
-                    this.detailRows = Array.isArray(detail?.items) ? detail.items : [];
-                    this.returnForm.handover_id = this.detailHandoverId;
-                } catch (err) {
-                    this.setFeedback('error', `Load handover detail failed: ${err.message || 'request_failed'}`);
-                } finally {
-                    this.loading.detail = false;
+                const result = await this.api(`/laundry/handovers/${encodeURIComponent(this.detailHandoverId)}`);
+                this.loading.detail = false;
+
+                if (!result.ok) {
+                    this.showError(`Load handover detail failed: ${result.error}`);
+                    return;
                 }
+
+                const detail = result.data || null;
+                this.detailData = detail;
+                this.detailRows = Array.isArray(detail?.items) ? detail.items : [];
+                this.returnForm.handover_id = this.detailHandoverId;
             },
             async loadPending() {
                 if (!this.detailHandoverId) return;
 
                 this.loading.pending = true;
-                try {
-                    const rows = await ui.requestJson(`/laundry/handovers/${encodeURIComponent(this.detailHandoverId)}/pending-returns`);
-                    this.pendingRows = Array.isArray(rows) ? rows : [];
-                } catch (err) {
-                    this.setFeedback('error', `Load pending returns failed: ${err.message || 'request_failed'}`);
-                } finally {
-                    this.loading.pending = false;
+                const result = await this.api(`/laundry/handovers/${encodeURIComponent(this.detailHandoverId)}/pending-returns`);
+                this.loading.pending = false;
+
+                if (!result.ok) {
+                    this.showError(`Load pending returns failed: ${result.error}`);
+                    return;
                 }
+
+                this.pendingRows = Array.isArray(result.data) ? result.data : [];
             },
             async loadPendingForReturn() {
                 if (!this.returnForm.handover_id) {
-                    this.setFeedback('error', 'Enter handover ID to load pending quantities.');
+                    this.showError('Enter handover ID to load pending quantities.');
                     return;
                 }
 
                 this.detailHandoverId = this.returnForm.handover_id;
                 await this.loadDetail();
                 await this.loadPending();
+
                 if (this.pendingRows.length === 0) {
-                    this.setFeedback('ok', 'No pending quantities for this handover.');
+                    this.showOk('No pending quantities for this handover.');
                     this.returnForm.items = [{ item_id: '', quantity_returned: 1, pending_return_quantity: 0 }];
                     return;
                 }
@@ -217,12 +254,19 @@
                 await this.loadDetail();
                 await this.loadPending();
             },
-            async quickReturnRemaining(handoverId) {
-                this.returnForm.handover_id = handoverId;
-                await this.loadPendingForReturn();
-                if (this.pendingRows.length > 0) {
-                    await this.processReturn();
-                }
+            async quickReturnRemaining(handoverId, event) {
+                const button = event?.currentTarget || null;
+                this.loading.quickReturnId = handoverId;
+
+                await request.withButtonLoading(button, 'Submitting...', async () => {
+                    this.returnForm.handover_id = handoverId;
+                    await this.loadPendingForReturn();
+                    if (this.pendingRows.length > 0) {
+                        await this.processReturn();
+                    }
+                });
+
+                this.loading.quickReturnId = null;
             },
         },
         async mounted() {
