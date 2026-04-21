@@ -1,0 +1,21 @@
+{
+  "name": "villa-cleaning-saas/core",
+  "description": "Production-oriented property operations system architecture foundation",
+  "type": "project",
+  "require": {
+    "php": "^8.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "php -d detect_unicode=0 tests/run.php"
+  }
+}
