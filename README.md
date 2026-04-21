@@ -108,6 +108,18 @@ Framework-less PHP 8.1 + MySQL backend for rental property operations.
 - `GET /laundry/handovers/{handoverId}`
 - `GET /laundry/handovers/{handoverId}/pending-returns`
 
+
+## Frontend admin UX conventions (Phase 6 polish)
+
+To keep admin operations consistent across requirements, inventory, and laundry pages:
+
+- Mutating actions should show explicit loading state and disable duplicate submissions.
+- API responses should be normalized to a common success/error shape before rendering UI feedback.
+- Validation errors should be displayed inline first, then summarized in a top-level alert region for quick triage.
+- Non-blocking refreshes should preserve active filters and current selection context.
+
+These conventions are intended as implementation guidance for future frontend iterations and do not change API contracts.
+
 ## Remaining work after Milestone 5 backend
 
 - Role-aware authentication and permissions
