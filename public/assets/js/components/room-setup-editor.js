@@ -38,10 +38,10 @@
                 const beds = this.beds.filter((x) => x.id).map((x) => ({ bedTypeId: x.id, quantity: Number(x.quantity) || 1 }));
                 const bathrooms = this.bathrooms.filter((x) => x.id).map((x) => ({ bathroomTypeId: x.id, quantity: Number(x.quantity) || 1 }));
 
-                const bedRes = await fetch(`/rooms/${this.room.id}/beds`, {
+                const bedRes = await fetch(window.apiUrl(`/rooms/${this.room.id}/beds`), {
                     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ beds }),
                 });
-                const bathRes = await fetch(`/rooms/${this.room.id}/bathrooms`, {
+                const bathRes = await fetch(window.apiUrl(`/rooms/${this.room.id}/bathrooms`), {
                     method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bathrooms }),
                 });
 
@@ -152,8 +152,8 @@
             setFeedback(type, message) { this.feedback = { type, message }; },
             async loadCatalogs() {
                 const [bedsRes, bathsRes] = await Promise.all([
-                    fetch('/setup/bed-types'),
-                    fetch('/setup/bathroom-types'),
+                    fetch(window.apiUrl('/setup/bed-types')),
+                    fetch(window.apiUrl('/setup/bathroom-types')),
                 ]);
                 this.bedTypes = await bedsRes.json();
                 this.bathroomTypes = await bathsRes.json();
@@ -163,7 +163,7 @@
                     this.setFeedback('error', 'Missing property_id in URL.');
                     return;
                 }
-                const res = await fetch(`/rooms?property_id=${encodeURIComponent(this.propertyId)}`);
+                const res = await fetch(window.apiUrl(`/rooms?property_id=${encodeURIComponent(this.propertyId)}`));
                 const json = await res.json();
                 this.rooms = json.data || [];
             },
@@ -189,7 +189,7 @@
                 const isEdit = !!this.roomForm.id;
                 const path = isEdit ? `/rooms/${this.roomForm.id}` : '/rooms';
                 const method = isEdit ? 'PUT' : 'POST';
-                const res = await fetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const res = await fetch(window.apiUrl(path), { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (res.ok) {
                     this.setFeedback('ok', 'Room saved successfully.');
                     this.resetRoomForm();

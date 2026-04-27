@@ -18,7 +18,7 @@ window.AssignmentPanel = {
     methods: {
         async assign() {
             const userIds = this.userIdsCsv.split(',').map((v) => v.trim()).filter(Boolean);
-            const res = await fetch(`/cleaning-events/${this.eventId}/assignments`, {
+            const res = await fetch(window.apiUrl(`/cleaning-events/${this.eventId}/assignments`), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_ids: userIds }),
@@ -27,7 +27,7 @@ window.AssignmentPanel = {
             this.$emit('updated');
         },
         async updateStatus() {
-            const res = await fetch(`/cleaning-events/${this.eventId}/assignments/${this.statusUserId}/status`, {
+            const res = await fetch(window.apiUrl(`/cleaning-events/${this.eventId}/assignments/${this.statusUserId}/status`), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ assignment_status: this.status }),

@@ -138,7 +138,7 @@ ob_start();
 
     async function loadProperties() {
         showBanner('ok', 'Loading properties...');
-        const res = await fetch('/properties');
+        const res = await fetch(window.apiUrl('/properties'));
         const data = await res.json();
         state.rows = data.data || [];
         renderTable();
@@ -154,7 +154,7 @@ ob_start();
         const method = id ? 'PUT' : 'POST';
         const path = id ? `/properties/${id}` : '/properties';
 
-        const res = await fetch(path, {
+        const res = await fetch(window.apiUrl(path), {
             method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),

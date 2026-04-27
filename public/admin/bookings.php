@@ -138,7 +138,7 @@ ob_start();
 
         table.querySelectorAll('button[data-cancel]').forEach((btn) => btn.addEventListener('click', async () => {
             if (!confirm('Cancel this booking?')) return;
-            await fetch(`/bookings/${btn.dataset.cancel}/cancel`, { method: 'POST' });
+            await fetch(window.apiUrl(`/bookings/${btn.dataset.cancel}/cancel`), { method: 'POST' });
             await loadBookings();
         }));
     }
@@ -146,7 +146,7 @@ ob_start();
     async function loadBookings() {
         showBanner('ok', 'Loading bookings...');
         const q = new URLSearchParams(new FormData(filterForm));
-        const res = await fetch(`/bookings?${q.toString()}`);
+        const res = await fetch(window.apiUrl(`/bookings?${q.toString()}`));
         const data = await res.json();
         state.rows = data.data || [];
         state.page = 1;
@@ -167,7 +167,7 @@ ob_start();
         const endpoint = id ? `/bookings/${id}` : '/bookings';
         const method = id ? 'PUT' : 'POST';
 
-        const res = await fetch(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const res = await fetch(window.apiUrl(endpoint), { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         if (res.ok) {
             showBanner('ok', 'Booking saved.');
             form.reset();
